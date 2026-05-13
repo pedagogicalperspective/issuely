@@ -1,0 +1,5 @@
+# Bu dosyayı .dev.vars olarak kopyalayıp gerçek API anahtarını yaz.
+# .dev.vars asla GitHub'a commit edilmez (.gitignore'da).
+# Sadece `wrangler pages dev` ile yerel olarak AI özelliğini test etmek için gereklidir.
+
+ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
