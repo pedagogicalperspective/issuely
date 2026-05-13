@@ -1,33 +1,43 @@
 import { useEffect, useState } from 'react';
-import {
-  BookOpen, FileCode2, FileText, Layout, Sparkles, GripVertical,
-  ArrowRight, Check, Hash, Users, ScrollText, Database, Mail,
-  Github, Globe, ChevronRight
-} from 'lucide-react';
+import { ArrowUpRight, Plus, Minus } from 'lucide-react';
 
-const FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap';
+const FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500;1,9..144,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap';
 
-const C = {
-  bg: '#FFFFFF',
-  surface: '#FAFBFC',
-  surfaceAlt: '#F1F4F8',
-  border: '#E2E5EB',
-  borderSoft: '#EDF0F4',
-  text: '#1A1F2E',
-  textDim: '#475569',
-  textMuted: '#94A3B8',
-  gold: '#A47929',
-  goldDim: '#6E531C',
-  goldGlow: 'rgba(164, 121, 41, 0.08)',
-  paper: '#F4EFE3',
-  coverInk: '#F4EFE3',
-  ink: '#0B1220',
-  inkSoft: '#111827',
-};
-
-const SERIF = 'Fraunces, "Source Serif 4", Georgia, serif';
+const SERIF_D = 'Fraunces, "Times New Roman", Georgia, serif';
+const SERIF_B = '"Source Serif 4", "Source Serif Pro", Georgia, serif';
 const SANS = '"DM Sans", system-ui, -apple-system, sans-serif';
 const MONO = '"JetBrains Mono", ui-monospace, monospace';
+
+const ROOT_STYLES = `
+  :root {
+    --paper:    oklch(94.5% 0.018 78);
+    --paper-2:  oklch(96.2% 0.012 80);
+    --paper-3:  oklch(91.8% 0.022 76);
+    --ink:      oklch(22% 0.020 252);
+    --ink-2:    oklch(36% 0.018 250);
+    --ink-3:    oklch(54% 0.014 248);
+    --ink-4:    oklch(72% 0.010 246);
+    --gold:     oklch(56% 0.092 78);
+    --gold-deep: oklch(42% 0.082 76);
+    --gold-soft: oklch(56% 0.092 78 / .10);
+    --rule:     oklch(36% 0.018 250 / .14);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+  .ily-link { transition: color 120ms ease-out; }
+  .ily-link:hover { color: var(--ink); }
+  .ily-btn { transition: opacity 120ms ease-out, background 120ms ease-out; }
+  .ily-btn:hover { opacity: .92; }
+  .ily-faq-q { transition: color 120ms ease-out; }
+  .ily-faq-q:hover { color: var(--gold-deep); }
+  .ily-mod-row { border-top: 1px solid var(--rule); }
+  .ily-mod-row:last-child { border-bottom: 1px solid var(--rule); }
+`;
 
 const openApp = (e) => {
   e?.preventDefault?.();
@@ -35,287 +45,255 @@ const openApp = (e) => {
 };
 
 // =====================================================
-// Navbar
+// Navbar — editorial masthead
 // =====================================================
-function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
+function Masthead() {
   return (
     <header style={{
       position: 'sticky', top: 0, zIndex: 50,
-      background: scrolled ? 'rgba(255,255,255,0.85)' : 'transparent',
-      backdropFilter: scrolled ? 'saturate(180%) blur(12px)' : 'none',
-      WebkitBackdropFilter: scrolled ? 'saturate(180%) blur(12px)' : 'none',
-      borderBottom: scrolled ? `1px solid ${C.border}` : '1px solid transparent',
-      transition: 'all .2s ease',
+      background: 'var(--paper)',
+      borderBottom: '1px solid var(--rule)',
     }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '18px 24px', display: 'flex', alignItems: 'center', gap: 32 }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '18px 28px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
         <a href="#/" onClick={(e) => { e.preventDefault(); window.location.hash = '#/'; window.scrollTo({ top: 0 }); }}
-           style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: C.text }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: 8,
-            background: `linear-gradient(135deg, ${C.ink} 0%, ${C.gold} 130%)`,
-            display: 'grid', placeItems: 'center', color: '#fff', fontFamily: SERIF, fontWeight: 700, fontSize: 18, letterSpacing: -0.5,
-          }}>I</div>
-          <span style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 22, letterSpacing: -0.5 }}>Issuely</span>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: C.gold, border: `1px solid ${C.gold}`, padding: '2px 6px', borderRadius: 4, letterSpacing: 0.5 }}>BETA</span>
+           style={{ textDecoration: 'none', color: 'var(--ink)', display: 'flex', alignItems: 'baseline', gap: 14 }}>
+          <span style={{ fontFamily: SERIF_D, fontWeight: 600, fontSize: 28, letterSpacing: -0.8, lineHeight: 1 }}>Issuely</span>
+          <span style={{ fontFamily: SERIF_D, fontStyle: 'italic', fontWeight: 400, fontSize: 13, color: 'var(--ink-3)' }}>journal issue workshop</span>
         </a>
 
-        <nav style={{ display: 'flex', gap: 28, marginLeft: 'auto', alignItems: 'center' }} className="ily-nav">
-          <a href="#features" style={navLink}>Özellikler</a>
-          <a href="#workflow" style={navLink}>Nasıl Çalışır</a>
-          <a href="#pricing" style={navLink}>Fiyatlandırma</a>
-          <a href="#faq" style={navLink}>SSS</a>
-          <a href="#/app" onClick={openApp} style={ctaPrimary(0)}>
-            Editöre git <ArrowRight size={14} strokeWidth={2.4} />
-          </a>
+        <nav style={{ display: 'flex', alignItems: 'baseline', gap: 28 }} className="ily-nav">
+          <a href="#modules" className="ily-link" style={navLink}>Modules</a>
+          <a href="#workflow" className="ily-link" style={navLink}>Workflow</a>
+          <a href="#pricing" className="ily-link" style={navLink}>Pricing</a>
+          <a href="#questions" className="ily-link" style={navLink}>Questions</a>
+          <a href="#/app" onClick={openApp} className="ily-btn" style={{
+            fontFamily: SANS, fontSize: 13, fontWeight: 600, color: 'var(--paper)',
+            background: 'var(--ink)', padding: '9px 16px', borderRadius: 4,
+            textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6,
+          }}>Open the editor</a>
         </nav>
       </div>
     </header>
   );
 }
-const navLink = { fontFamily: SANS, fontSize: 14, fontWeight: 500, color: C.textDim, textDecoration: 'none', transition: 'color .15s' };
+const navLink = { fontFamily: SANS, fontSize: 13, fontWeight: 500, color: 'var(--ink-3)', textDecoration: 'none' };
 
 // =====================================================
-// Hero
+// Hero — left-aligned editorial opening
 // =====================================================
 function Hero() {
   return (
-    <section style={{ position: 'relative', overflow: 'hidden', borderBottom: `1px solid ${C.borderSoft}` }}>
-      {/* Subtle background grid */}
-      <div aria-hidden style={{
-        position: 'absolute', inset: 0,
-        backgroundImage:
-          `radial-gradient(1100px 500px at 80% -10%, ${C.goldGlow}, transparent 60%),
-           linear-gradient(${C.borderSoft} 1px, transparent 1px),
-           linear-gradient(90deg, ${C.borderSoft} 1px, transparent 1px)`,
-        backgroundSize: 'auto, 56px 56px, 56px 56px',
-        maskImage: 'radial-gradient(900px 600px at 50% 30%, #000 60%, transparent 100%)',
-        WebkitMaskImage: 'radial-gradient(900px 600px at 50% 30%, #000 60%, transparent 100%)',
-        opacity: 0.7,
-      }} />
-
-      <div style={{ position: 'relative', maxWidth: 1200, margin: '0 auto', padding: '88px 24px 96px', display: 'grid', gridTemplateColumns: '1.05fr .95fr', gap: 56, alignItems: 'center' }} className="ily-hero">
-        {/* Left — copy */}
+    <section style={{ borderBottom: '1px solid var(--rule)' }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '96px 28px 88px', display: 'grid', gridTemplateColumns: '1.05fr .95fr', gap: 72, alignItems: 'start' }} className="ily-hero">
+        {/* Left: editorial title */}
         <div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: '#fff', border: `1px solid ${C.border}`, borderRadius: 999, fontFamily: MONO, fontSize: 11, letterSpacing: 0.5, color: C.goldDim, marginBottom: 24 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.gold }} />
-            DERGI SAYISI HAZIRLAMA · v0.5
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 0.18 + 'em', color: 'var(--gold-deep)', textTransform: 'uppercase', marginBottom: 28 }}>
+            Volume 0 · Issue 5 · Beta
           </div>
 
-          <h1 style={{ fontFamily: SERIF, fontSize: 64, lineHeight: 1.02, fontWeight: 500, letterSpacing: -1.5, margin: 0, color: C.text }}>
-            Dergi sayısı, <em style={{ fontStyle: 'italic', fontWeight: 500, color: C.gold }}>dakikalar</em><br />
-            içinde derlenir.
+          <h1 style={{ fontFamily: SERIF_D, fontSize: 84, lineHeight: 0.96, fontWeight: 500, letterSpacing: -2.2, margin: 0, color: 'var(--ink)' }}>
+            A workshop for<br />
+            assembling the<br />
+            <em style={{ fontStyle: 'italic', fontWeight: 500, color: 'var(--gold-deep)' }}>journal issue.</em>
           </h1>
 
-          <p style={{ fontFamily: SANS, fontSize: 18, lineHeight: 1.6, color: C.textDim, marginTop: 24, maxWidth: 540 }}>
-            Kapaktan jeneriğe, editör kurulundan içindekiler tablosuna — frontmatter'ı otomatikleştir,
-            Crossref XML'ini tek tıkla üret, DOI ve sayfa aralıklarını <em>kendiliğinden</em> hesaplat.
-            Editörler için modern dergi sayı hazırlama atölyesi.
+          <p style={{ fontFamily: SERIF_B, fontSize: 19, lineHeight: 1.6, color: 'var(--ink-2)', marginTop: 36, maxWidth: 520 }}>
+            Issuely takes the editor through the seven frontmatter modules of an academic issue,
+            calculates DOIs and page ranges as articles are reordered, and exports the Crossref
+            5.3.1 deposit and the print-ready DOCX. Built for editors who would rather not own a
+            spreadsheet.
           </p>
 
-          <div style={{ display: 'flex', gap: 12, marginTop: 36, flexWrap: 'wrap' }}>
-            <a href="#/app" onClick={openApp} style={ctaPrimary(1)}>
-              Editöre git <ArrowRight size={16} strokeWidth={2.4} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 28, marginTop: 40 }}>
+            <a href="#/app" onClick={openApp} className="ily-btn" style={{
+              fontFamily: SANS, fontSize: 14, fontWeight: 600,
+              color: 'var(--paper)', background: 'var(--ink)',
+              padding: '14px 22px', borderRadius: 4,
+              textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8,
+              border: '1px solid var(--ink)',
+            }}>
+              Open the editor <ArrowUpRight size={15} strokeWidth={1.6} />
             </a>
-            <a href="#workflow" style={ctaGhost}>
-              Nasıl çalışır?
+            <a href="#workflow" className="ily-link" style={{
+              fontFamily: SANS, fontSize: 14, fontWeight: 500, color: 'var(--ink-2)',
+              textDecoration: 'underline', textUnderlineOffset: 4, textDecorationThickness: 1,
+            }}>
+              See the five steps
             </a>
-          </div>
-
-          <div style={{ marginTop: 40, display: 'flex', gap: 28, flexWrap: 'wrap' }}>
-            <Stat n="6" label="Frontmatter modülü" />
-            <Stat n="1-click" label="Crossref XML" />
-            <Stat n="AI" label="Sayı tanıtım taslağı" />
-            <Stat n="DOCX" label="Word çıktısı" />
           </div>
         </div>
 
-        {/* Right — TOC paper mockup */}
-        <TocMockup />
+        {/* Right: TOC artifact, full opacity, no shadow */}
+        <TocArtifact />
+      </div>
+
+      {/* Editorial credit line under hero */}
+      <div style={{ borderTop: '1px solid var(--rule)', background: 'var(--paper-2)' }}>
+        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '14px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 16 }}>
+          <span style={{ fontFamily: SERIF_B, fontStyle: 'italic', fontSize: 13, color: 'var(--ink-3)' }}>
+            In active use by <span style={{ color: 'var(--ink-2)' }}>Pedagogical Perspective</span>, an open-access journal of educational research.
+          </span>
+          <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.14 + 'em', color: 'var(--ink-4)', textTransform: 'uppercase' }}>
+            eISSN 2822-4841 · DOI prefix 10.29329
+          </span>
+        </div>
       </div>
     </section>
   );
 }
 
-function Stat({ n, label }) {
-  return (
-    <div>
-      <div style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 600, color: C.text, letterSpacing: -0.5 }}>{n}</div>
-      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.8, color: C.textMuted, textTransform: 'uppercase', marginTop: 2 }}>{label}</div>
-    </div>
-  );
-}
-
-function TocMockup() {
+function TocArtifact() {
   const articles = [
-    { t: 'AI Okuryazarlığı ve Öğretmen Hazırbulunuşluğu', a: 'Yılmaz, A. · Demir, B.', p: '1–18' },
-    { t: 'Sosyal Bilgiler Eğitiminde Dijital Dönüşüm', a: 'Kaya, M.', p: '19–34' },
-    { t: 'Ortaokul Öğrencilerinde Üst Bilişsel Strateji', a: 'Şahin, E. · Yıldız, C.', p: '35–52' },
-    { t: 'Pandemi Sonrası Sınıf İklimi: Olgu Çalışması', a: 'Aksoy, F.', p: '53–68' },
-    { t: 'STEM Etkinliklerinde Tutum ve Başarı İlişkisi', a: 'Öztürk, S. · Çelik, R.', p: '69–84' },
+    { n: 1, t: 'AI literacy and teacher readiness', a: 'Yılmaz, A.; Demir, B.', p: '1–18' },
+    { n: 2, t: 'Digital transformation in social studies', a: 'Kaya, M.', p: '19–34' },
+    { n: 3, t: 'Metacognitive strategies in middle school', a: 'Şahin, E.; Yıldız, C.', p: '35–52' },
+    { n: 4, t: 'Post-pandemic classroom climate', a: 'Aksoy, F.', p: '53–68' },
+    { n: 5, t: 'Attitude and achievement in STEM', a: 'Öztürk, S.; Çelik, R.', p: '69–84' },
+    { n: 6, t: 'Pre-service teachers and AI ethics', a: 'Tan, H.', p: '85–98' },
   ];
   return (
-    <div style={{ position: 'relative', perspective: 1200 }}>
-      {/* Floating Crossref XML chip */}
+    <figure style={{ margin: 0 }}>
       <div style={{
-        position: 'absolute', top: -16, left: -32, zIndex: 3,
-        background: C.ink, color: C.paper, padding: '10px 14px', borderRadius: 10,
-        fontFamily: MONO, fontSize: 11, letterSpacing: 0.4,
-        display: 'flex', alignItems: 'center', gap: 8,
-        boxShadow: '0 20px 40px -20px rgba(0,0,0,.3)',
+        background: 'var(--paper-2)',
+        border: '1px solid var(--rule)',
+        padding: '36px 36px 28px',
       }}>
-        <FileCode2 size={14} color={C.gold} />
-        crossref-deposit.xml
-      </div>
-
-      {/* DOI badge floating */}
-      <div style={{
-        position: 'absolute', bottom: -20, right: -16, zIndex: 3,
-        background: '#fff', border: `1px solid ${C.border}`, padding: '12px 16px', borderRadius: 12,
-        boxShadow: '0 20px 40px -20px rgba(0,0,0,.18)',
-      }}>
-        <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 0.8, color: C.textMuted, textTransform: 'uppercase' }}>DOI Pattern</div>
-        <div style={{ fontFamily: MONO, fontSize: 12, color: C.text, marginTop: 4 }}>
-          10.29329/<span style={{ color: C.gold }}>pedper.2026.5.1.{'{n}'}</span>
+        <div style={{ borderBottom: '1px solid var(--rule)', paddingBottom: 16 }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.18 + 'em', color: 'var(--gold-deep)', textTransform: 'uppercase' }}>
+            Volume 5 · Issue 1 · Spring 2026
+          </div>
+          <div style={{ fontFamily: SERIF_D, fontSize: 22, fontWeight: 600, color: 'var(--ink)', marginTop: 8, letterSpacing: -0.4 }}>
+            Pedagogical Perspective
+          </div>
+          <div style={{ fontFamily: SERIF_B, fontStyle: 'italic', fontSize: 12, color: 'var(--ink-3)', marginTop: 2 }}>
+            Table of contents
+          </div>
         </div>
-      </div>
-
-      {/* Paper sheet */}
-      <div style={{
-        background: C.paper,
-        border: `1px solid ${C.border}`,
-        borderRadius: 4,
-        padding: '36px 40px',
-        boxShadow: '0 40px 80px -30px rgba(11,18,32,0.25), 0 10px 20px -10px rgba(11,18,32,0.12)',
-        transform: 'rotate(.6deg)',
-        fontFamily: SERIF,
-        color: '#2A2014',
-      }}>
-        <div style={{ textAlign: 'center', paddingBottom: 14, borderBottom: `1px solid rgba(110,83,28,.25)` }}>
-          <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1.2, color: C.goldDim }}>VOLUME 5 · ISSUE 1 · 2026</div>
-          <div style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 600, marginTop: 6, letterSpacing: -0.3 }}>Pedagogical Perspective</div>
-          <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 12, color: C.goldDim, marginTop: 2 }}>İçindekiler · Table of Contents</div>
-        </div>
-        <ol style={{ listStyle: 'none', padding: 0, margin: '18px 0 0' }}>
-          {articles.map((x, i) => (
-            <li key={i} style={{ display: 'flex', alignItems: 'baseline', gap: 12, padding: '8px 0', borderBottom: `1px dotted rgba(110,83,28,.22)` }}>
-              <span style={{ fontFamily: MONO, fontSize: 10, color: C.goldDim, minWidth: 18 }}>{String(i + 1).padStart(2, '0')}</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: SERIF, fontSize: 13, fontWeight: 500, color: '#2A2014', lineHeight: 1.35 }}>{x.t}</div>
-                <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 11, color: C.goldDim, marginTop: 2 }}>{x.a}</div>
+        <ol style={{ listStyle: 'none', margin: '4px 0 0', padding: 0 }}>
+          {articles.map(x => (
+            <li key={x.n} style={{ display: 'grid', gridTemplateColumns: '28px 1fr 56px', gap: 14, padding: '11px 0', borderBottom: '1px solid var(--rule)', alignItems: 'baseline' }}>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--ink-4)' }}>{String(x.n).padStart(2, '0')}</span>
+              <div>
+                <div style={{ fontFamily: SERIF_B, fontSize: 14, color: 'var(--ink)', lineHeight: 1.3 }}>{x.t}</div>
+                <div style={{ fontFamily: SERIF_B, fontStyle: 'italic', fontSize: 12, color: 'var(--ink-3)', marginTop: 2 }}>{x.a}</div>
               </div>
-              <span style={{ fontFamily: MONO, fontSize: 10, color: C.goldDim }}>{x.p}</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--ink-3)', textAlign: 'right' }}>{x.p}</span>
             </li>
           ))}
         </ol>
       </div>
-    </div>
+      <figcaption style={{ fontFamily: SERIF_B, fontStyle: 'italic', fontSize: 12, color: 'var(--ink-3)', marginTop: 14, paddingLeft: 4 }}>
+        Fig. I — A live issue rendered from Issuely's editor. DOI and page ranges recompute on reorder.
+      </figcaption>
+    </figure>
   );
 }
 
 // =====================================================
-// Logo strip (trust)
+// Editorial note — replaces "trust by" strip
 // =====================================================
-function TrustStrip() {
-  const items = ['Pedagogical Perspective', 'Ordu Üniversitesi', 'BYDK', 'Crossref Member', 'Anthropic Claude'];
+function EditorialNote() {
   return (
-    <section style={{ borderBottom: `1px solid ${C.borderSoft}`, background: C.surface }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 32, flexWrap: 'wrap', justifyContent: 'center' }}>
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: C.textMuted, textTransform: 'uppercase' }}>Şu anda kullanılıyor</span>
-        {items.map((x, i) => (
-          <span key={i} style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 14, color: C.textDim, letterSpacing: -0.2 }}>{x}</span>
-        ))}
+    <section style={{ background: 'var(--paper-2)', borderBottom: '1px solid var(--rule)' }}>
+      <div style={{ maxWidth: 880, margin: '0 auto', padding: '64px 28px' }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 0.18 + 'em', color: 'var(--gold-deep)', textTransform: 'uppercase' }}>
+          Editor's note
+        </div>
+        <p style={{ fontFamily: SERIF_B, fontSize: 22, lineHeight: 1.5, color: 'var(--ink)', marginTop: 16, fontWeight: 400 }}>
+          Most journal-issue tools are spreadsheets in disguise: rows of authors, columns of pages,
+          a panic on the last day before deposit. Issuely is the opposite. It treats an issue the way
+          a print compositor would: <em style={{ fontStyle: 'italic', color: 'var(--ink-2)' }}>frontmatter first</em>, articles next,
+          standards always.
+        </p>
       </div>
     </section>
   );
 }
 
 // =====================================================
-// Features
+// Modules — replaces 6-card grid with editorial prose blocks
 // =====================================================
-function Features() {
-  const f = [
+function Modules() {
+  const items = [
     {
-      icon: <Layout size={20} />, kicker: '01',
-      title: 'Frontmatter, eksiksiz',
-      desc: 'Kapak, jenerik, editör kurulu, bölüm editörleri, hakemler, indeks ve içindekiler — altı modül tek panelde.',
-      points: ['6 modül, tek pencere', 'Sürükle-bırak sıralama', 'Otomatik özet sayım'],
+      r: 'I',
+      title: 'Frontmatter, all of it.',
+      lede: 'Cover, masthead, editorial board, section editors, indexing, reviewers, table of contents.',
+      body: 'Six modules in one workspace. Each carries its own format conventions — ORCID under board members, ROR under publisher, season-name under volume. Nothing is left to be assembled by hand on the morning of the deposit.',
+      tag: 'Standards: ORCID v3 · ROR · ISSN',
     },
     {
-      icon: <FileCode2 size={20} />, kicker: '02',
-      title: 'Crossref XML, tek tık',
-      desc: 'Sayıdaki tüm makaleler için Crossref formatına uygun deposit XML\'i kendiliğinden derlenir. Batch ID ve timestamp otomatik.',
-      points: ['Crossref 5.3.1 şeması', 'Çoklu yazar + ORCID', 'Yayın tarihi normalize'],
+      r: 'II',
+      title: 'Crossref deposit, one click.',
+      lede: 'A complete Crossref 5.3.1 XML for every article in the issue, with batch identifier and timestamp.',
+      body: 'Multiple authors with affiliations, ORCID identifiers, normalized publish dates, DOI segments — assembled into one deposit ready to upload. No more hand-editing XML in a text editor at midnight.',
+      tag: 'Schema: Crossref 5.3.1 deposit',
     },
     {
-      icon: <Hash size={20} />, kicker: '03',
-      title: 'DOI & sayfa, otomatik',
-      desc: 'Bir DOI desen yaz, sayı sıralaması değiştikçe DOI ve sayfa aralıkları yeniden hesaplansın.',
-      points: ['Şablonlu DOI deseni', 'Sıra → sayfa hesabı', 'Birden fazla sayı için yeniden kullanım'],
+      r: 'III',
+      title: 'DOI and pagination, automatic.',
+      lede: 'Write the DOI pattern once. Pages and identifiers recompute every time the issue is reordered.',
+      body: 'A pattern like 10.29329/pedper.{year}.{volume}.{issue}.{number} resolves automatically. Drag an article up or down: page-start, page-end, and DOI segment update for every article that moves with it.',
+      tag: 'Sequenced: Pages, DOI, both',
     },
     {
-      icon: <Sparkles size={20} />, kicker: '04',
-      title: 'Sayı tanıtımı için yapay zeka',
-      desc: 'Claude Sonnet ile sayıya özgü iki dilli (TR/EN) açılış paragrafı taslağı. Sen onaylarsın, baskıya hazır.',
-      points: ['TR + EN otomatik', 'Tematik odak tabanlı', 'Düzenlenebilir taslak'],
+      r: 'IV',
+      title: 'Issue introduction, drafted.',
+      lede: 'Claude Sonnet drafts the editor\'s opening paragraph, in Turkish and in English, in parallel.',
+      body: 'Provide the thematic focus. Issuely composes two short paragraphs in the voice of an editor-in-chief — substantive framing, not "we are excited to present." Editable, attributable, optional.',
+      tag: 'Engine: Anthropic Claude Sonnet 4.6',
     },
     {
-      icon: <GripVertical size={20} />, kicker: '05',
-      title: 'Sürükle-bırak sıralama',
-      desc: 'Makale sırasını değiştir, sayfa aralıkları ve DOI\'ler aynı anda kayar. Yanlış sıralama yok.',
-      points: ['Gerçek zamanlı yeniden numaralandırma', 'Çoklu yazar desteği', 'Sayı boyu rakam tutarlılığı'],
+      r: 'V',
+      title: 'Reorder by hand.',
+      lede: 'Drag-and-drop sequencing, keyboard-accessible, with live recalculation.',
+      body: 'No drag-handle to chase across the screen. Pick up any article with the keyboard or pointer; the sequence and its derived numbers reflect immediately. ⌘K opens a palette to jump to any module without lifting hands.',
+      tag: 'Built on @dnd-kit · WCAG AA',
     },
     {
-      icon: <FileText size={20} />, kicker: '06',
-      title: 'Word çıktısı, baskıya hazır',
-      desc: 'Frontmatter\'ı Microsoft Word formatında dışa aktar. Yazıevi sürecine doğrudan girer.',
-      points: ['Word HTML formatı', 'Yazıevi uyumlu', 'PDF için kaynak'],
+      r: 'VI',
+      title: 'Word, on demand.',
+      lede: 'Print-ready DOCX of the frontmatter, formatted in the typesetting house\'s vocabulary.',
+      body: 'Cover, masthead table, editorial board with grouped sections, indexing keywords, reviewer roll, table of contents. The file opens in Word as a finished document, not a draft to clean up.',
+      tag: 'Output: Word HTML (DOCX-compatible)',
     },
   ];
 
   return (
-    <section id="features" style={{ padding: '96px 24px', background: C.bg, borderBottom: `1px solid ${C.borderSoft}` }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+    <section id="modules" style={{ borderBottom: '1px solid var(--rule)' }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '112px 28px 96px' }}>
         <SectionHead
-          kicker="ÖZELLİKLER"
-          title="Editöryal sürecin altı kritik adımı."
-          subtitle="Makaleler hakemden geçti. Geriye sayıyı baskıya hazırlamak kaldı — Issuely tam o adımı otomatikleştirir."
+          kicker="Six modules"
+          title={<>What an issue <em style={{ fontStyle: 'italic', color: 'var(--gold-deep)' }}>actually</em> needs.</>}
+          subtitle="Each one earns its place in the sidebar. Each one writes back to the deposit."
         />
-
-        <div className="ily-feat" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginTop: 56 }}>
-          {f.map((it, i) => (
-            <div key={i} style={{
-              background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, padding: '28px 24px',
-              transition: 'border-color .15s, transform .15s',
-              cursor: 'default',
-            }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = 'translateY(0)'; }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{
-                  width: 36, height: 36, borderRadius: 8,
-                  background: C.goldGlow, color: C.goldDim,
-                  display: 'grid', placeItems: 'center',
-                }}>{it.icon}</span>
-                <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: C.textMuted }}>{it.kicker}</span>
+        <div style={{ marginTop: 64 }}>
+          {items.map((it, i) => (
+            <article key={it.r} className="ily-mod-row" style={{
+              display: 'grid',
+              gridTemplateColumns: '120px 1fr 1fr',
+              gap: 56,
+              padding: '40px 0',
+              alignItems: 'start',
+            }}>
+              <div style={{ fontFamily: SERIF_D, fontStyle: 'italic', fontSize: 56, fontWeight: 500, color: 'var(--gold-deep)', letterSpacing: -1, lineHeight: 0.9 }}>
+                {it.r}
               </div>
-              <h3 style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 500, letterSpacing: -0.5, margin: '20px 0 8px', color: C.text }}>{it.title}</h3>
-              <p style={{ fontFamily: SANS, fontSize: 14, lineHeight: 1.6, color: C.textDim, margin: 0 }}>{it.desc}</p>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '18px 0 0', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {it.points.map((p, j) => (
-                  <li key={j} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 11, color: C.textDim }}>
-                    <Check size={12} color={C.gold} strokeWidth={2.4} /> {p}
-                  </li>
-                ))}
-              </ul>
-            </div>
+              <div>
+                <h3 style={{ fontFamily: SERIF_D, fontSize: 30, fontWeight: 500, letterSpacing: -0.7, margin: 0, color: 'var(--ink)', lineHeight: 1.15 }}>
+                  {it.title}
+                </h3>
+                <p style={{ fontFamily: SERIF_B, fontSize: 16, fontStyle: 'italic', color: 'var(--ink-2)', marginTop: 12, lineHeight: 1.55, maxWidth: 480 }}>
+                  {it.lede}
+                </p>
+                <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.14 + 'em', color: 'var(--gold-deep)', textTransform: 'uppercase', marginTop: 18 }}>
+                  {it.tag}
+                </div>
+              </div>
+              <p style={{ fontFamily: SERIF_B, fontSize: 16, color: 'var(--ink-2)', margin: 0, lineHeight: 1.7 }}>
+                {it.body}
+              </p>
+            </article>
           ))}
         </div>
       </div>
@@ -324,39 +302,38 @@ function Features() {
 }
 
 // =====================================================
-// Workflow (How it works)
+// Workflow — five steps, editorial column
 // =====================================================
 function Workflow() {
   const steps = [
-    { n: '01', title: 'Sayı bilgilerini gir', desc: 'Cilt, sayı, yıl, ISSN, DOI deseni — bir kez yaz, her sayıda yeniden kullan.' },
-    { n: '02', title: 'Makaleleri yükle ve sırala', desc: 'Sürükle-bırak ile sırayı belirle. Sayfa aralıkları ve DOI\'ler eş zamanlı kayar.' },
-    { n: '03', title: 'Editörler ve hakemleri ekle', desc: 'Editör kurulu, bölüm editörleri, hakem listesi — ORCID alanları dahil.' },
-    { n: '04', title: 'AI ile sayı tanıtımını oluştur', desc: 'Tematik odağı yaz, Claude TR/EN paragrafı taslaklasın. Düzenle, onayla.' },
-    { n: '05', title: 'Crossref XML ve DOCX dışa aktar', desc: 'Tek tıkla her ikisi de hazır. Yayın akışına ekle.' },
+    { r: 'I',   t: 'Set the journal',         d: 'Title, eISSN, DOI prefix, frequency, license, peer-review model. Written once; reused on every issue.' },
+    { r: 'II',  t: 'Upload the articles',     d: 'Drop or paste the list. Authors, ORCID, page counts, type. Drag to sequence. Page ranges and DOI segments follow.' },
+    { r: 'III', t: 'Compose the masthead',    d: 'Editor-in-chief, associate editors, section editors, board, international advisory, reviewers. ORCID and affiliations included.' },
+    { r: 'IV',  t: 'Draft the editor\'s note',d: 'Provide a thematic focus. Issuely drafts the bilingual opening paragraph in the editor-in-chief voice. Read, revise, approve.' },
+    { r: 'V',   t: 'Export and deposit',      d: 'Frontmatter DOCX into the typesetter\'s workflow. Crossref XML into the deposit form. Done in one afternoon, not one weekend.' },
   ];
-
   return (
-    <section id="workflow" style={{ padding: '96px 24px', background: C.surface, borderBottom: `1px solid ${C.borderSoft}` }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+    <section id="workflow" style={{ background: 'var(--paper-2)', borderBottom: '1px solid var(--rule)' }}>
+      <div style={{ maxWidth: 880, margin: '0 auto', padding: '128px 28px 112px' }}>
         <SectionHead
-          kicker="NASIL ÇALIŞIR"
-          title="Beş adımda, yayına hazır."
-          subtitle="Manuel kopyala-yapıştır işleri ve XML satır sayma günleri sona erdi."
+          kicker="Workflow"
+          title="From rough roster to deposited issue, in five passes."
+          subtitle="The order of operations of a typesetting house, rendered to a single workspace."
         />
-
-        <ol style={{ listStyle: 'none', padding: 0, margin: '56px 0 0', display: 'grid', gap: 0 }}>
+        <ol style={{ listStyle: 'none', padding: 0, margin: '64px 0 0', display: 'flex', flexDirection: 'column' }}>
           {steps.map((s, i) => (
-            <li key={i} style={{
-              display: 'grid', gridTemplateColumns: '120px 1fr auto', alignItems: 'center',
-              padding: '28px 0', borderTop: `1px solid ${C.border}`,
-              borderBottom: i === steps.length - 1 ? `1px solid ${C.border}` : 'none',
-            }}>
-              <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 44, fontWeight: 500, color: C.gold, letterSpacing: -1 }}>{s.n}</div>
+            <li key={s.r} className="ily-mod-row" style={{ display: 'grid', gridTemplateColumns: '76px 1fr', gap: 24, padding: '28px 0', alignItems: 'baseline' }}>
+              <span style={{ fontFamily: SERIF_D, fontStyle: 'italic', fontSize: 40, fontWeight: 500, color: 'var(--gold-deep)', letterSpacing: -0.8, lineHeight: 1 }}>
+                {s.r}
+              </span>
               <div>
-                <h4 style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 500, margin: 0, color: C.text, letterSpacing: -0.4 }}>{s.title}</h4>
-                <p style={{ fontFamily: SANS, fontSize: 15, color: C.textDim, margin: '6px 0 0', lineHeight: 1.55, maxWidth: 640 }}>{s.desc}</p>
+                <h4 style={{ fontFamily: SERIF_D, fontSize: 24, fontWeight: 500, letterSpacing: -0.5, margin: 0, color: 'var(--ink)', lineHeight: 1.2 }}>
+                  {s.t}
+                </h4>
+                <p style={{ fontFamily: SERIF_B, fontSize: 16, color: 'var(--ink-2)', margin: '6px 0 0', lineHeight: 1.6, maxWidth: 640 }}>
+                  {s.d}
+                </p>
               </div>
-              <ChevronRight size={20} color={C.textMuted} />
             </li>
           ))}
         </ol>
@@ -366,108 +343,93 @@ function Workflow() {
 }
 
 // =====================================================
-// Pricing
+// Pricing — prose-style comparison table (no card grid)
 // =====================================================
 function Pricing() {
-  const tiers = [
-    {
-      name: 'Editör',
-      kicker: 'SOLO',
-      price: 'Ücretsiz',
-      desc: 'Tek editör için. Bir dergi, sınırsız sayı.',
-      cta: 'Hemen başla',
-      featured: false,
-      features: [
-        '1 dergi profili',
-        'Tüm frontmatter modülleri',
-        'DOCX dışa aktarma',
-        'DOI ve sayfa otomasyonu',
-        'Sürükle-bırak sıralama',
-      ],
-    },
-    {
-      name: 'Yayıncı',
-      kicker: 'PUBLISHER',
-      price: '299₺',
-      priceSuffix: '/ay',
-      desc: 'Crossref entegrasyonu, AI tanıtım, çoklu dergi.',
-      cta: 'Demo iste',
-      featured: true,
-      features: [
-        'Sınırsız dergi profili',
-        'Crossref XML üretimi',
-        'AI sayı tanıtımı (TR/EN)',
-        'Ekip üyeleri ve roller',
-        'Öncelikli destek',
-        'Toplu makale içe aktarma',
-      ],
-    },
-    {
-      name: 'Kurumsal',
-      kicker: 'INSTITUTION',
-      price: 'Görüşelim',
-      desc: 'Üniversite yayınları ve çok-dergi yayıncılar için.',
-      cta: 'İletişime geç',
-      featured: false,
-      features: [
-        'Yayıncı planındaki her şey',
-        'SSO / LDAP entegrasyonu',
-        'Beyaz etiket / özel domain',
-        'Yıllık fatura ve sözleşme',
-        'Özelleştirilmiş onboarding',
-      ],
-    },
+  const rows = [
+    { feat: 'Journal profiles',                editor: 'One',                   publisher: 'Unlimited',         institution: 'Unlimited' },
+    { feat: 'Frontmatter modules',             editor: 'All six',               publisher: 'All six',           institution: 'All six' },
+    { feat: 'Word (DOCX) export',              editor: '✓',                     publisher: '✓',                 institution: '✓' },
+    { feat: 'DOI and pagination automation',   editor: '✓',                     publisher: '✓',                 institution: '✓' },
+    { feat: 'Crossref deposit XML',            editor: '—',                     publisher: '✓',                 institution: '✓' },
+    { feat: 'AI editor\'s note (TR + EN)',     editor: 'Bring own key',         publisher: 'Included',          institution: 'Included' },
+    { feat: 'Team members and roles',          editor: '—',                     publisher: 'Up to 5',           institution: 'Unlimited' },
+    { feat: 'Cover image generator',           editor: '✓',                     publisher: '✓',                 institution: '✓' },
+    { feat: 'SSO / LDAP',                      editor: '—',                     publisher: '—',                 institution: '✓' },
+    { feat: 'Custom domain',                   editor: '—',                     publisher: '—',                 institution: '✓' },
+    { feat: 'Priority support',                editor: 'Community',             publisher: 'Email',             institution: 'Dedicated' },
   ];
 
-  return (
-    <section id="pricing" style={{ padding: '96px 24px', background: C.bg, borderBottom: `1px solid ${C.borderSoft}` }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <SectionHead
-          kicker="FİYATLANDIRMA"
-          title="Akademik bütçeye uygun, şeffaf."
-          subtitle="Solo editörler için ücretsiz başlangıç. Yayıncılar için ölçeklenir."
-        />
+  const headerCellBase = { fontFamily: SERIF_D, fontWeight: 500, letterSpacing: -0.4, color: 'var(--ink)', padding: '16px 18px', verticalAlign: 'baseline', borderBottom: '1px solid var(--ink-3)' };
+  const cell = { fontFamily: SERIF_B, fontSize: 15, color: 'var(--ink-2)', padding: '16px 18px', verticalAlign: 'baseline', borderBottom: '1px solid var(--rule)' };
+  const goldCell = { fontFamily: SERIF_B, fontSize: 15, color: 'var(--ink)', padding: '16px 18px', verticalAlign: 'baseline', borderBottom: '1px solid var(--rule)', background: 'var(--gold-soft)' };
 
-        <div className="ily-price" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginTop: 56 }}>
-          {tiers.map((t, i) => (
-            <div key={i} style={{
-              position: 'relative',
-              background: t.featured ? C.ink : C.bg,
-              color: t.featured ? '#fff' : C.text,
-              border: t.featured ? `1px solid ${C.ink}` : `1px solid ${C.border}`,
-              borderRadius: 14,
-              padding: '36px 28px',
-              boxShadow: t.featured ? '0 30px 60px -30px rgba(11,18,32,0.4)' : 'none',
-            }}>
-              {t.featured && (
-                <div style={{ position: 'absolute', top: -12, right: 20, background: C.gold, color: '#fff', padding: '4px 10px', borderRadius: 999, fontFamily: MONO, fontSize: 10, letterSpacing: 0.8 }}>
-                  ÖNERILEN
-                </div>
-              )}
-              <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.2, color: t.featured ? C.gold : C.textMuted }}>{t.kicker}</div>
-              <h3 style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 500, margin: '8px 0 4px', letterSpacing: -0.5 }}>{t.name}</h3>
-              <p style={{ fontFamily: SANS, fontSize: 13, color: t.featured ? 'rgba(255,255,255,.7)' : C.textDim, margin: 0, minHeight: 36 }}>{t.desc}</p>
-              <div style={{ marginTop: 24, display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                <span style={{ fontFamily: SERIF, fontSize: 44, fontWeight: 600, letterSpacing: -1.5 }}>{t.price}</span>
-                {t.priceSuffix && <span style={{ fontFamily: SANS, fontSize: 14, color: t.featured ? 'rgba(255,255,255,.6)' : C.textMuted }}>{t.priceSuffix}</span>}
-              </div>
-              <a href="#/app" onClick={openApp} style={{
-                marginTop: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8,
-                padding: '12px 16px', borderRadius: 8, textDecoration: 'none',
-                background: t.featured ? C.gold : C.surfaceAlt,
-                color: t.featured ? '#fff' : C.text,
-                border: t.featured ? 'none' : `1px solid ${C.border}`,
-                fontFamily: SANS, fontWeight: 500, fontSize: 14,
-              }}>{t.cta} <ArrowRight size={14} /></a>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '28px 0 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {t.features.map((f, j) => (
-                  <li key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontFamily: SANS, fontSize: 14, color: t.featured ? 'rgba(255,255,255,.85)' : C.textDim, lineHeight: 1.5 }}>
-                    <Check size={14} color={t.featured ? C.gold : C.gold} strokeWidth={2.4} style={{ flexShrink: 0, marginTop: 3 }} /> {f}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+  return (
+    <section id="pricing" style={{ borderBottom: '1px solid var(--rule)' }}>
+      <div style={{ maxWidth: 1080, margin: '0 auto', padding: '112px 28px 112px' }}>
+        <SectionHead
+          kicker="Pricing"
+          title="Three tiers. One published rate sheet."
+          subtitle="No quote forms for the editor tier. Sustained pricing, not promotional."
+        />
+        <div style={{ marginTop: 56, overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
+            <thead>
+              <tr>
+                <th style={{ ...headerCellBase, fontFamily: MONO, fontSize: 10, fontWeight: 600, letterSpacing: 0.16 + 'em', color: 'var(--ink-3)', textTransform: 'uppercase', textAlign: 'left' }}>
+                  Compare
+                </th>
+                <th style={{ ...headerCellBase, fontSize: 22, textAlign: 'left' }}>
+                  Editor
+                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.14 + 'em', color: 'var(--ink-3)', marginTop: 4 }}>Free · forever</div>
+                </th>
+                <th style={{ ...headerCellBase, fontSize: 22, textAlign: 'left', background: 'var(--gold-soft)', borderBottom: '1px solid var(--gold-deep)' }}>
+                  Publisher
+                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.14 + 'em', color: 'var(--gold-deep)', marginTop: 4 }}>₺299 / month</div>
+                </th>
+                <th style={{ ...headerCellBase, fontSize: 22, textAlign: 'left' }}>
+                  Institution
+                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.14 + 'em', color: 'var(--ink-3)', marginTop: 4 }}>By arrangement</div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={i}>
+                  <td style={{ ...cell, fontFamily: SANS, fontSize: 13, fontWeight: 500, color: 'var(--ink-2)', width: '28%' }}>{r.feat}</td>
+                  <td style={cell}>{r.editor}</td>
+                  <td style={goldCell}>{r.publisher}</td>
+                  <td style={cell}>{r.institution}</td>
+                </tr>
+              ))}
+              <tr>
+                <td style={{ ...cell, borderBottom: 0 }}></td>
+                <td style={{ ...cell, borderBottom: 0 }}>
+                  <a href="#/app" onClick={openApp} className="ily-btn" style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    fontFamily: SANS, fontWeight: 600, fontSize: 13,
+                    color: 'var(--ink)', textDecoration: 'underline',
+                    textUnderlineOffset: 4, textDecorationThickness: 1,
+                  }}>Start <ArrowUpRight size={13} strokeWidth={1.6} /></a>
+                </td>
+                <td style={{ ...goldCell, borderBottom: 0 }}>
+                  <a href="#/app" onClick={openApp} className="ily-btn" style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    fontFamily: SANS, fontWeight: 600, fontSize: 13,
+                    color: 'var(--paper)', background: 'var(--ink)',
+                    padding: '9px 14px', borderRadius: 4,
+                    textDecoration: 'none',
+                  }}>Open editor <ArrowUpRight size={13} strokeWidth={1.6} /></a>
+                </td>
+                <td style={{ ...cell, borderBottom: 0 }}>
+                  <a href="mailto:hello@issuely.com" className="ily-link" style={{
+                    fontFamily: SANS, fontWeight: 500, fontSize: 13, color: 'var(--ink-2)',
+                    textDecoration: 'underline', textUnderlineOffset: 4, textDecorationThickness: 1,
+                  }}>Write to us</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -475,142 +437,148 @@ function Pricing() {
 }
 
 // =====================================================
-// FAQ
+// Questions (FAQ) — editorial
 // =====================================================
-function FAQ() {
+function Questions() {
   const items = [
-    { q: 'Issuely hangi dergi formatlarını destekliyor?', a: 'Crossref 5.3.1 deposit şeması ve Word (DOCX) çıktısı. Her ikisi de uluslararası yayıncılık standartlarıdır.' },
-    { q: 'Verilerim nerede saklanıyor?', a: 'Şu anda tüm veriler tarayıcının yerel belleğinde tutulur. Yayıncı planında bulut senkronizasyonu eklenecek.' },
-    { q: 'AI sayı tanıtımı için ek ücret var mı?', a: 'Yayıncı planında dahildir. Solo editörler kendi Anthropic API anahtarlarını getirebilir.' },
-    { q: 'ORCID, ROR gibi standartlar destekleniyor mu?', a: 'ORCID alanları her editör ve hakem için mevcut. ROR entegrasyonu yol haritasında.' },
-    { q: 'Mevcut dergim için onboarding desteği veriyor musunuz?', a: 'Kurumsal planda özel onboarding ve veri taşıma desteği sunuyoruz.' },
+    {
+      q: 'Where is the issue data stored?',
+      a: 'In the browser, on the editor\'s machine, by default. Nothing is sent to a server until the editor exports a deposit or triggers the AI editor\'s-note generator. Publisher and Institution plans add encrypted cloud sync for teams.',
+    },
+    {
+      q: 'What schemas and identifier standards does Issuely speak?',
+      a: 'Crossref 5.3.1 for deposit, ORCID v3 fields on every person, ISSN for the publication, DOI patterns for the issue. ROR support for affiliations is on the roadmap.',
+    },
+    {
+      q: 'Is the AI editor\'s note billed separately?',
+      a: 'Publisher and Institution include it. The free Editor tier asks for an Anthropic API key (so the editor pays Anthropic directly for that one feature). Everything else on the free tier is free.',
+    },
+    {
+      q: 'Can two editors work on the same issue?',
+      a: 'Today, no — the workspace is single-editor. Multi-editor collaboration with role-based permissions ships with Publisher in the next minor.',
+    },
+    {
+      q: 'How is Issuely different from DergiPark or OJS?',
+      a: 'DergiPark and OJS run the whole journal. Issuely runs only the issue-assembly step at the end. Editors continue to receive and review articles wherever they are received and reviewed; Issuely takes the accepted articles and turns them into a deposit-ready issue.',
+    },
+    {
+      q: 'Is the editor accessible without a Crossref membership?',
+      a: 'Yes. The Crossref deposit export remains optional — DOCX, cover image, table of contents, and the editor\'s note all work without Crossref. The deposit XML is there for journals that have membership.',
+    },
   ];
   return (
-    <section id="faq" style={{ padding: '96px 24px', background: C.surface, borderBottom: `1px solid ${C.borderSoft}` }}>
-      <div style={{ maxWidth: 880, margin: '0 auto' }}>
+    <section id="questions" style={{ background: 'var(--paper-2)', borderBottom: '1px solid var(--rule)' }}>
+      <div style={{ maxWidth: 880, margin: '0 auto', padding: '96px 28px' }}>
         <SectionHead
-          kicker="SIKÇA SORULAN"
-          title="Sorulardan önce yanıtlar."
+          kicker="Questions"
+          title="Read before you write."
         />
-        <div style={{ marginTop: 48 }}>
-          {items.map((x, i) => <FAQItem key={i} q={x.q} a={x.a} />)}
+        <div style={{ marginTop: 56 }}>
+          {items.map((x, i) => <QItem key={i} q={x.q} a={x.a} />)}
         </div>
       </div>
     </section>
   );
 }
 
-function FAQItem({ q, a }) {
+function QItem({ q, a }) {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ borderTop: `1px solid ${C.border}` }}>
-      <button onClick={() => setOpen(!open)} style={{
-        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '22px 0', background: 'transparent', border: 0, cursor: 'pointer',
-        fontFamily: SERIF, fontSize: 19, fontWeight: 500, color: C.text, textAlign: 'left', letterSpacing: -0.2,
+    <div style={{ borderTop: '1px solid var(--rule)' }}>
+      <button onClick={() => setOpen(!open)} className="ily-faq-q" style={{
+        width: '100%', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+        padding: '24px 0', background: 'transparent', border: 0, cursor: 'pointer',
+        fontFamily: SERIF_D, fontSize: 22, fontWeight: 500, color: 'var(--ink)',
+        textAlign: 'left', letterSpacing: -0.4, lineHeight: 1.3,
       }}>
-        {q}
-        <span style={{ fontFamily: MONO, fontSize: 18, color: C.gold }}>{open ? '−' : '+'}</span>
+        <span>{q}</span>
+        <span style={{ marginLeft: 16, color: 'var(--gold-deep)', display: 'inline-flex', alignItems: 'center' }}>
+          {open ? <Minus size={18} strokeWidth={1.4} /> : <Plus size={18} strokeWidth={1.4} />}
+        </span>
       </button>
       {open && (
-        <p style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.7, color: C.textDim, padding: '0 0 24px', margin: 0, maxWidth: 720 }}>{a}</p>
+        <p style={{ fontFamily: SERIF_B, fontSize: 17, lineHeight: 1.7, color: 'var(--ink-2)', padding: '0 0 28px', margin: 0, maxWidth: 720 }}>
+          {a}
+        </p>
       )}
     </div>
   );
 }
 
 // =====================================================
-// CTA
+// Inline closing paragraph CTA (replaces big CTA block)
 // =====================================================
-function CTA() {
+function ClosingNote() {
   return (
-    <section style={{ padding: '96px 24px', background: C.ink, color: '#fff', position: 'relative', overflow: 'hidden' }}>
-      <div aria-hidden style={{
-        position: 'absolute', inset: 0,
-        background: `radial-gradient(700px 400px at 20% 20%, ${C.goldGlow}, transparent 60%), radial-gradient(700px 400px at 80% 80%, rgba(99,102,241,0.08), transparent 60%)`,
-      }} />
-      <div style={{ position: 'relative', maxWidth: 880, margin: '0 auto', textAlign: 'center' }}>
-        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.2, color: C.gold }}>BAŞLAMAYA HAZIR MISIN?</div>
-        <h2 style={{ fontFamily: SERIF, fontSize: 52, fontWeight: 500, letterSpacing: -1.2, margin: '12px 0 16px', lineHeight: 1.05 }}>
-          Bir sonraki sayını <em style={{ color: C.gold, fontStyle: 'italic' }}>Issuely ile</em> hazırla.
-        </h2>
-        <p style={{ fontFamily: SANS, fontSize: 18, color: 'rgba(255,255,255,.7)', maxWidth: 580, margin: '0 auto', lineHeight: 1.6 }}>
-          Editör hesabı ücretsiz. Kart bilgisi gerekmez. Tarayıcıda çalışır.
-        </p>
-        <div style={{ marginTop: 36, display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <a href="#/app" onClick={openApp} style={{
-            padding: '14px 24px', borderRadius: 10,
-            background: C.gold, color: '#fff', textDecoration: 'none',
-            fontFamily: SANS, fontWeight: 600, fontSize: 15,
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-          }}>Editöre git <ArrowRight size={16} /></a>
-          <a href="mailto:hello@issuely.com" style={{
-            padding: '14px 24px', borderRadius: 10,
-            background: 'transparent', color: '#fff', textDecoration: 'none',
-            border: '1px solid rgba(255,255,255,.2)',
-            fontFamily: SANS, fontWeight: 500, fontSize: 15,
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-          }}><Mail size={16} /> İletişime geç</a>
+    <section style={{ borderBottom: '1px solid var(--rule)' }}>
+      <div style={{ maxWidth: 880, margin: '0 auto', padding: '112px 28px' }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 0.18 + 'em', color: 'var(--gold-deep)', textTransform: 'uppercase' }}>
+          The next issue
         </div>
+        <p style={{ fontFamily: SERIF_D, fontSize: 44, lineHeight: 1.15, fontWeight: 500, color: 'var(--ink)', letterSpacing: -1, marginTop: 18 }}>
+          The frontmatter waits for no one, but Issuely is patient with the editor. The editor opens
+          a new issue, populates the modules, exports the deposit. <a href="#/app" onClick={openApp} className="ily-link" style={{ color: 'var(--gold-deep)', textDecoration: 'underline', textUnderlineOffset: 6, textDecorationThickness: 1.5 }}>Begin a workspace</a>, no card required.
+        </p>
       </div>
     </section>
   );
 }
 
 // =====================================================
-// Footer
+// Footer — colophon
 // =====================================================
-function Footer() {
+function Colophon() {
   return (
-    <footer style={{ padding: '64px 24px 32px', background: C.bg, color: C.textDim }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 40 }} className="ily-foot">
+    <footer style={{ background: 'var(--paper)' }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '56px 28px 32px', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 48 }} className="ily-foot">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: `linear-gradient(135deg, ${C.ink} 0%, ${C.gold} 130%)`,
-              display: 'grid', placeItems: 'center', color: '#fff', fontFamily: SERIF, fontWeight: 700, fontSize: 18,
-            }}>I</div>
-            <span style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 22, color: C.text }}>Issuely</span>
-          </div>
-          <p style={{ fontFamily: SANS, fontSize: 14, marginTop: 16, maxWidth: 320, lineHeight: 1.6 }}>
-            Akademik editörler için dergi sayısı hazırlama atölyesi. Ordu Üniversitesi BYDK tarafından geliştirildi.
+          <div style={{ fontFamily: SERIF_D, fontWeight: 600, fontSize: 28, color: 'var(--ink)', letterSpacing: -0.7 }}>Issuely</div>
+          <p style={{ fontFamily: SERIF_B, fontStyle: 'italic', fontSize: 14, color: 'var(--ink-3)', marginTop: 12, lineHeight: 1.6, maxWidth: 320 }}>
+            A workshop for academic journal editors. Developed by Doç. Dr. Erhan Yaylak at Ordu Üniversitesi BYDK.
           </p>
         </div>
-        <FooterCol title="Ürün" links={[
-          ['Özellikler', '#features'],
-          ['Nasıl çalışır', '#workflow'],
-          ['Fiyatlandırma', '#pricing'],
-          ['Editör', '#/app'],
+        <FootCol title="Product" links={[
+          ['Modules', '#modules'],
+          ['Workflow', '#workflow'],
+          ['Pricing', '#pricing'],
+          ['Editor', '#/app'],
         ]} />
-        <FooterCol title="Kaynaklar" links={[
-          ['Dokümanlar', '#'],
-          ['Yol haritası', '#'],
-          ['Sürüm notları', '#'],
-          ['Crossref şeması', '#'],
+        <FootCol title="References" links={[
+          ['Crossref schema', 'https://www.crossref.org/documentation/schema-library/'],
+          ['ORCID v3', 'https://info.orcid.org/'],
+          ['Open access policy', '#'],
+          ['Roadmap', '#'],
         ]} />
-        <FooterCol title="İletişim" links={[
-          ['E-posta', 'mailto:hello@issuely.com'],
-          ['GitHub', '#'],
-          ['Yardım merkezi', '#'],
-          ['Gizlilik', '#'],
+        <FootCol title="Correspondence" links={[
+          ['hello@issuely.com', 'mailto:hello@issuely.com'],
+          ['Help', '#'],
+          ['Privacy', '#'],
+          ['Imprint', '#'],
         ]} />
       </div>
-      <div style={{ maxWidth: 1200, margin: '40px auto 0', paddingTop: 24, borderTop: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-        <span style={{ fontFamily: MONO, fontSize: 11, color: C.textMuted }}>© 2026 Issuely · Doç. Dr. Erhan Yaylak</span>
-        <span style={{ fontFamily: MONO, fontSize: 11, color: C.textMuted, letterSpacing: 0.5 }}>v0.5 · Crossref XML ready</span>
+      <div style={{ maxWidth: 1180, margin: '40px auto 0', padding: '0 28px 32px' }}>
+        <div style={{ borderTop: '1px solid var(--rule)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 12 }}>
+          <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.14 + 'em', color: 'var(--ink-4)', textTransform: 'uppercase' }}>
+            © 2026 Issuely · Crossref deposit & DOCX export, in active use since Vol. 5
+          </span>
+          <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.14 + 'em', color: 'var(--ink-4)', textTransform: 'uppercase' }}>
+            v0.5 · Build {new Date().getFullYear()}.{String(new Date().getMonth() + 1).padStart(2, '0')}
+          </span>
+        </div>
       </div>
     </footer>
   );
 }
-function FooterCol({ title, links }) {
+function FootCol({ title, links }) {
   return (
     <div>
-      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.2, color: C.textMuted, textTransform: 'uppercase', marginBottom: 14 }}>{title}</div>
+      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.14 + 'em', color: 'var(--ink-3)', textTransform: 'uppercase', marginBottom: 16 }}>{title}</div>
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {links.map(([l, h], i) => (
           <li key={i}>
-            <a href={h} onClick={h === '#/app' ? openApp : undefined} style={{ fontFamily: SANS, fontSize: 14, color: C.textDim, textDecoration: 'none' }}>{l}</a>
+            <a href={h} onClick={h === '#/app' ? openApp : undefined} className="ily-link" style={{
+              fontFamily: SERIF_B, fontSize: 14, color: 'var(--ink-2)', textDecoration: 'none',
+            }}>{l}</a>
           </li>
         ))}
       </ul>
@@ -619,48 +587,39 @@ function FooterCol({ title, links }) {
 }
 
 // =====================================================
-// Shared
+// Section head — reused across sections
 // =====================================================
 function SectionHead({ kicker, title, subtitle }) {
   return (
-    <div style={{ textAlign: 'center', maxWidth: 720, margin: '0 auto' }}>
-      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.4, color: C.gold }}>{kicker}</div>
-      <h2 style={{ fontFamily: SERIF, fontSize: 44, fontWeight: 500, letterSpacing: -1, margin: '12px 0 0', color: C.text, lineHeight: 1.1 }}>{title}</h2>
-      {subtitle && <p style={{ fontFamily: SANS, fontSize: 17, color: C.textDim, marginTop: 16, lineHeight: 1.6 }}>{subtitle}</p>}
-    </div>
+    <header>
+      <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 0.18 + 'em', color: 'var(--gold-deep)', textTransform: 'uppercase' }}>
+        {kicker}
+      </div>
+      <h2 style={{ fontFamily: SERIF_D, fontSize: 56, fontWeight: 500, letterSpacing: -1.4, margin: '14px 0 0', color: 'var(--ink)', lineHeight: 1.02, maxWidth: 880 }}>
+        {title}
+      </h2>
+      {subtitle && (
+        <p style={{ fontFamily: SERIF_B, fontStyle: 'italic', fontSize: 19, color: 'var(--ink-2)', marginTop: 18, lineHeight: 1.55, maxWidth: 680 }}>
+          {subtitle}
+        </p>
+      )}
+    </header>
   );
 }
 
-const ctaPrimary = (size) => ({
-  display: 'inline-flex', alignItems: 'center', gap: size ? 8 : 6,
-  padding: size ? '13px 22px' : '9px 14px',
-  background: C.ink, color: '#fff', borderRadius: 10, textDecoration: 'none',
-  fontFamily: SANS, fontWeight: 600, fontSize: size ? 15 : 13,
-  border: `1px solid ${C.ink}`,
-  transition: 'transform .15s, background .15s',
-});
-
-const ctaGhost = {
-  display: 'inline-flex', alignItems: 'center', gap: 8,
-  padding: '13px 22px', borderRadius: 10, textDecoration: 'none',
-  background: '#fff', color: C.text,
-  border: `1px solid ${C.border}`,
-  fontFamily: SANS, fontWeight: 500, fontSize: 15,
-};
-
 // =====================================================
-// Responsive CSS injection
+// Responsive CSS
 // =====================================================
 const ResponsiveCSS = () => (
   <style>{`
     @media (max-width: 960px) {
-      .ily-hero { grid-template-columns: 1fr !important; gap: 48px !important; }
-      .ily-feat { grid-template-columns: 1fr !important; }
-      .ily-price { grid-template-columns: 1fr !important; }
+      .ily-hero { grid-template-columns: 1fr !important; gap: 56px !important; padding: 64px 24px !important; }
+      .ily-hero h1 { font-size: 56px !important; }
+      .ily-mod-row { grid-template-columns: 64px 1fr !important; gap: 20px !important; }
+      .ily-mod-row > :last-child { grid-column: 1 / -1; padding-left: 64px; }
       .ily-foot { grid-template-columns: 1fr 1fr !important; }
       .ily-nav a:not(:last-child) { display: none; }
     }
-    .ily-nav a:hover { color: #1A1F2E !important; }
   `}</style>
 );
 
@@ -675,21 +634,22 @@ export default function Landing() {
       l.href = FONTS_HREF;
       document.head.appendChild(l);
     }
-    document.title = 'Issuely — Dergi sayısı hazırlama atölyesi';
+    document.title = 'Issuely — A workshop for the journal issue';
   }, []);
 
   return (
-    <div style={{ fontFamily: SANS, color: C.text, background: C.bg, minHeight: '100vh' }}>
+    <div style={{ background: 'var(--paper)', color: 'var(--ink)', minHeight: '100vh', fontFamily: SERIF_B }}>
+      <style>{ROOT_STYLES}</style>
       <ResponsiveCSS />
-      <Navbar />
+      <Masthead />
       <Hero />
-      <TrustStrip />
-      <Features />
+      <EditorialNote />
+      <Modules />
       <Workflow />
       <Pricing />
-      <FAQ />
-      <CTA />
-      <Footer />
+      <Questions />
+      <ClosingNote />
+      <Colophon />
     </div>
   );
 }
