@@ -4,8 +4,20 @@ import {
   Trash2, BookOpen, FileText, FileCode2, Image as ImageIcon, Send, Hash,
   Users, Tag, Archive, Award, Database, Layout,
   ScrollText, UserCheck, Globe, Mail, MapPin, Calendar,
-  Sparkles
+  Sparkles, Search, Command as CommandIcon, Loader2, X, Check, Download
 } from 'lucide-react';
+import { Toaster, toast } from 'sonner';
+import {
+  DndContext, closestCenter, KeyboardSensor, PointerSensor,
+  useSensor, useSensors, DragOverlay
+} from '@dnd-kit/core';
+import {
+  arrayMove, SortableContext, sortableKeyboardCoordinates,
+  verticalListSortingStrategy, useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Command } from 'cmdk';
 
 // =====================================================
 // Issuely — Issue Workspace (v0.2)
@@ -983,23 +995,23 @@ const TocSection = ({ paginated, journal, issue }) => (
 
 // ============== Articles Section ==============
 
-const ArticleRow = ({ article, index, onUpdate, onDelete, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, isOver, doiString }) => {
+const ArticleRow = ({ article, index, onUpdate, onDelete, doiString }) => {
   const [expanded, setExpanded] = useState(false);
   const typeMeta = TYPE_LABELS[article.type] || TYPE_LABELS.research;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: article.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    background: isDragging ? PALETTE.surfaceAlt : PALETTE.surface,
+    borderTop: `1px solid ${PALETTE.borderSoft}`,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 10 : 'auto',
+  };
 
   return (
-    <div draggable
-      onDragStart={() => onDragStart(article.id)}
-      onDragOver={e => { e.preventDefault(); onDragOver(article.id); }}
-      onDrop={e => { e.preventDefault(); onDrop(); }}
-      onDragEnd={onDragEnd}
-      style={{
-        background: isDragging ? PALETTE.surfaceAlt : PALETTE.surface,
-        borderTop: isOver ? `2px solid ${PALETTE.gold}` : `1px solid ${PALETTE.borderSoft}`,
-        opacity: isDragging ? 0.4 : 1, transition: 'background 0.15s',
-      }}>
+    <div ref={setNodeRef} style={style}>
       <div style={{ display: 'flex', alignItems: 'flex-start', padding: '14px 16px', gap: 12 }}>
-        <div style={{ cursor: 'grab', color: PALETTE.textMuted, paddingTop: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+        <div {...attributes} {...listeners} style={{ cursor: 'grab', color: PALETTE.textMuted, paddingTop: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, touchAction: 'none' }}>
           <GripVertical size={16} strokeWidth={1.5} />
           <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: PALETTE.gold, fontWeight: 500 }}>{padNumber(index + 1)}</div>
         </div>
@@ -1064,7 +1076,15 @@ const ArticleRow = ({ article, index, onUpdate, onDelete, onDragStart, onDragOve
             style={{ background: 'transparent', border: 'none', color: PALETTE.textDim, cursor: 'pointer', padding: 4 }}>
             {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </button>
-          <button onClick={() => { if (confirm('Bu makaleyi kaldırmak istediğine emin misin?')) onDelete(article.id); }}
+          <button onClick={() => {
+              const title = article.titleTr || 'Bu makale';
+              toast(`"${title.length > 40 ? title.slice(0, 40) + '…' : title}" silinsin mi?`, {
+                description: 'Bu işlem geri alınamaz.',
+                action: { label: 'Sil', onClick: () => { onDelete(article.id); toast.success('Makale silindi'); } },
+                cancel: { label: 'Vazgeç', onClick: () => {} },
+                duration: 8000,
+              });
+            }}
             style={{ background: 'transparent', border: 'none', color: PALETTE.textMuted, cursor: 'pointer', padding: 4 }}
             onMouseEnter={e => e.currentTarget.style.color = PALETTE.danger}
             onMouseLeave={e => e.currentTarget.style.color = PALETTE.textMuted}>
@@ -1076,37 +1096,47 @@ const ArticleRow = ({ article, index, onUpdate, onDelete, onDragStart, onDragOve
   );
 };
 
-const ArticlesSection = ({ paginated, journal, issue, setArticles, addArticle, draggedId, overId, setDraggedId, setOverId }) => {
+const ArticlesSection = ({ paginated, journal, issue, setArticles, addArticle }) => {
   const updateArticle = (u) => setArticles(prev => prev.map(a => a.id === u.id ? u : a));
   const deleteArticle = (id) => setArticles(prev => prev.filter(a => a.id !== id));
-  const onDrop = () => {
-    if (!draggedId || !overId || draggedId === overId) { setDraggedId(null); setOverId(null); return; }
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (e) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
     setArticles(prev => {
-      const from = prev.findIndex(a => a.id === draggedId);
-      const to = prev.findIndex(a => a.id === overId);
+      const from = prev.findIndex(a => a.id === active.id);
+      const to = prev.findIndex(a => a.id === over.id);
       if (from < 0 || to < 0) return prev;
-      const next = [...prev]; const [m] = next.splice(from, 1); next.splice(to, 0, m); return next;
+      const next = arrayMove(prev, from, to);
+      toast.success('Sıra güncellendi', { description: `Makale ${from + 1} → ${to + 1}. Sayfa ve DOI yeniden hesaplandı.`, duration: 2500 });
+      return next;
     });
-    setDraggedId(null); setOverId(null);
   };
 
   return (
     <>
       <SectionHeader romanIdx="1" title="Makaleler" subtitle="Sürükleyerek yeniden sırala — sayfa aralıkları ve DOI numaraları anında güncellenir." count={paginated.length} />
-      <div style={{ background: PALETTE.surface, border: `1px solid ${PALETTE.border}`, borderRadius: 8, overflow: 'hidden' }}>
-        {paginated.map((a, i) => (
-          <ArticleRow key={a.id} article={a} index={i}
-            onUpdate={updateArticle} onDelete={deleteArticle}
-            onDragStart={setDraggedId}
-            onDragOver={setOverId}
-            onDrop={onDrop}
-            onDragEnd={() => { setDraggedId(null); setOverId(null); }}
-            isDragging={draggedId === a.id}
-            isOver={overId === a.id && draggedId !== a.id}
-            doiString={computeDOI(journal, issue, i + 1)}
-          />
-        ))}
-      </div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={paginated.map(a => a.id)} strategy={verticalListSortingStrategy}>
+          <div style={{ background: PALETTE.surface, border: `1px solid ${PALETTE.border}`, borderRadius: 8, overflow: 'hidden' }}>
+            {paginated.map((a, i) => (
+              <ArticleRow
+                key={a.id}
+                article={a}
+                index={i}
+                onUpdate={updateArticle}
+                onDelete={deleteArticle}
+                doiString={computeDOI(journal, issue, i + 1)}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
       <div style={{ marginTop: 10 }}>
         <AddBtn onClick={addArticle} label="Makale ekle" />
       </div>
@@ -1242,6 +1272,104 @@ const Sidebar = ({ activeSection, setActiveSection, journal, issue, totalArticle
   );
 };
 
+// ============== Command Palette (Cmd+K) ==============
+
+const CommandPalette = ({ open, setOpen, setActiveSection, onGenerateDocx, onGenerateCrossref, onGenerateCoverImage, onGenerateIntro }) => {
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setOpen((o) => !o);
+      }
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [setOpen]);
+
+  const go = (id) => { setActiveSection(id); setOpen(false); };
+  const run = (fn) => { fn(); setOpen(false); };
+
+  if (!open) return null;
+
+  return (
+    <div
+      onClick={() => setOpen(false)}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 100,
+        background: 'rgba(11,18,32,.45)', backdropFilter: 'blur(4px)',
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+        paddingTop: '15vh',
+      }}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: -8, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.15 }}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: 'min(560px, 92vw)',
+          background: PALETTE.bg,
+          border: `1px solid ${PALETTE.border}`,
+          borderRadius: 12,
+          boxShadow: '0 30px 60px -20px rgba(11,18,32,.35)',
+          overflow: 'hidden',
+        }}
+      >
+        <Command label="Komut Paleti">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: `1px solid ${PALETTE.borderSoft}` }}>
+            <Search size={16} color={PALETTE.textMuted} />
+            <Command.Input
+              autoFocus
+              placeholder="Bölüm veya komut ara…"
+              style={{
+                flex: 1, border: 0, outline: 'none', background: 'transparent',
+                fontFamily: 'DM Sans, sans-serif', fontSize: 15, color: PALETTE.text,
+              }}
+            />
+            <kbd style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: PALETTE.textMuted, padding: '2px 6px', background: PALETTE.surfaceAlt, borderRadius: 4 }}>ESC</kbd>
+          </div>
+          <Command.List style={{ maxHeight: 360, overflow: 'auto', padding: 8 }}>
+            <Command.Empty style={{ padding: '16px', fontFamily: 'DM Sans', fontSize: 13, color: PALETTE.textMuted, textAlign: 'center' }}>
+              Sonuç yok
+            </Command.Empty>
+            <Command.Group heading="Bölümler" style={paletteGroup}>
+              {SECTIONS.map((s) => {
+                const Icon = s.icon;
+                return (
+                  <Command.Item key={s.id} value={`bolum ${s.label}`} onSelect={() => go(s.id)} style={paletteItem}>
+                    <Icon size={14} color={PALETTE.goldDim} />
+                    <span style={{ flex: 1 }}>{s.label}</span>
+                    <span style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 11, color: PALETTE.textMuted }}>{s.romanIdx}</span>
+                  </Command.Item>
+                );
+              })}
+            </Command.Group>
+            <Command.Group heading="Çıktılar" style={paletteGroup}>
+              <Command.Item value="docx frontmatter indir" onSelect={() => run(onGenerateDocx)} style={paletteItem}>
+                <FileText size={14} color={PALETTE.goldDim} /> <span style={{ flex: 1 }}>Frontmatter DOCX indir</span> <Download size={12} color={PALETTE.textMuted} />
+              </Command.Item>
+              <Command.Item value="crossref xml indir" onSelect={() => run(onGenerateCrossref)} style={paletteItem}>
+                <FileCode2 size={14} color={PALETTE.goldDim} /> <span style={{ flex: 1 }}>Crossref XML indir</span> <Download size={12} color={PALETTE.textMuted} />
+              </Command.Item>
+              <Command.Item value="kapak gorseli indir" onSelect={() => run(onGenerateCoverImage)} style={paletteItem}>
+                <ImageIcon size={14} color={PALETTE.goldDim} /> <span style={{ flex: 1 }}>Kapak görseli indir (PNG)</span> <Download size={12} color={PALETTE.textMuted} />
+              </Command.Item>
+            </Command.Group>
+            <Command.Group heading="AI" style={paletteGroup}>
+              <Command.Item value="ai sayi tanitim olustur" onSelect={() => run(onGenerateIntro)} style={paletteItem}>
+                <Sparkles size={14} color={PALETTE.goldDim} /> <span style={{ flex: 1 }}>AI ile sayı tanıtım taslağı üret</span>
+              </Command.Item>
+            </Command.Group>
+          </Command.List>
+        </Command>
+      </motion.div>
+    </div>
+  );
+};
+const paletteGroup = { fontFamily: 'JetBrains Mono, monospace', fontSize: 9, letterSpacing: 1.4, color: PALETTE.textMuted, padding: '8px 10px 4px', textTransform: 'uppercase' };
+const paletteItem = { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 6, cursor: 'pointer', fontFamily: 'DM Sans', fontSize: 14, color: PALETTE.text };
+
 // ============== Main App ==============
 
 export default function App() {
@@ -1254,8 +1382,7 @@ export default function App() {
   const [reviewers, setReviewers] = useState(SEED_REVIEWERS);
   const [indexing, setIndexing] = useState(SEED_INDEXING);
   const [activeSection, setActiveSection] = useState('cover');
-  const [draggedId, setDraggedId] = useState(null);
-  const [overId, setOverId] = useState(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [docxGenerating, setDocxGenerating] = useState(false);
   const [crossrefGenerating, setCrossrefGenerating] = useState(false);
   const [coverImageGenerating, setCoverImageGenerating] = useState(false);
@@ -1338,12 +1465,13 @@ Return ONLY valid JSON with no markdown fences or preamble:
 
       if (parsed.introTr && parsed.introEn) {
         setCover(c => ({ ...c, introTr: parsed.introTr, introEn: parsed.introEn }));
+        toast.success('AI taslağı hazır', { description: 'Sayı tanıtım paragrafları üretildi.' });
       } else {
         throw new Error('Yanıt formatı beklenmedik — introTr/introEn alanları eksik');
       }
     } catch (e) {
       console.error('Intro generation failed:', e);
-      alert('AI taslak üretimi başarısız: ' + e.message);
+      toast.error('AI taslak üretimi başarısız', { description: e.message });
     } finally {
       setIntroGenerating(false);
     }
@@ -1493,9 +1621,10 @@ Return ONLY valid JSON with no markdown fences or preamble:
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 200);
+      toast.success('Kapak görseli indirildi', { description: `${journal.shortName}_Vol${issue.volume}_No${issue.number}_${issue.year}_Cover.png` });
     } catch (e) {
       console.error('Cover image generation failed:', e);
-      alert('Kapak görseli oluşturma sırasında hata: ' + e.message);
+      toast.error('Kapak görseli oluşturulamadı', { description: e.message });
     } finally {
       setTimeout(() => setCoverImageGenerating(false), 600);
     }
@@ -1516,9 +1645,10 @@ Return ONLY valid JSON with no markdown fences or preamble:
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 200);
+      toast.success('Crossref XML indirildi', { description: `${paginated.length} makale · ${journal.shortName} Vol ${issue.volume}.${issue.number}` });
     } catch (e) {
       console.error('Crossref XML generation failed:', e);
-      alert('Crossref XML oluşturma sırasında hata: ' + e.message);
+      toast.error('Crossref XML üretilemedi', { description: e.message });
     } finally {
       setTimeout(() => setCrossrefGenerating(false), 600);
     }
@@ -1713,9 +1843,10 @@ ${reviewersHtml}
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 200);
+      toast.success('Frontmatter DOCX indirildi', { description: 'Word\'de açıp yazıevine teslim edebilirsin.' });
     } catch (e) {
       console.error('DOCX generation failed:', e);
-      alert('Belge oluşturma sırasında hata: ' + e.message);
+      toast.error('DOCX üretilemedi', { description: e.message });
     } finally {
       setTimeout(() => setDocxGenerating(false), 600);
     }
@@ -1723,6 +1854,29 @@ ${reviewersHtml}
 
   return (
     <div style={{ minHeight: '100vh', background: PALETTE.bg, color: PALETTE.text, fontFamily: 'DM Sans, sans-serif' }}>
+      <style>{`
+        [cmdk-item][data-selected="true"] { background: ${PALETTE.goldGlow}; color: ${PALETTE.gold}; }
+        [cmdk-item] { transition: background .08s; }
+      `}</style>
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          style: {
+            fontFamily: 'DM Sans, sans-serif',
+            border: `1px solid ${PALETTE.border}`,
+            background: PALETTE.bg,
+            color: PALETTE.text,
+          },
+        }}
+      />
+      <CommandPalette
+        open={paletteOpen} setOpen={setPaletteOpen}
+        setActiveSection={setActiveSection}
+        onGenerateDocx={generateFrontmatterDocx}
+        onGenerateCrossref={generateCrossrefXml}
+        onGenerateCoverImage={generateCoverImage}
+        onGenerateIntro={generateIntroParagraphs}
+      />
       <header style={{
         borderBottom: `1px solid ${PALETTE.border}`, padding: '16px 24px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -1745,6 +1899,18 @@ ${reviewersHtml}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <StatusPill label="Taslak" color={PALETTE.gold} />
+          <button
+            onClick={() => setPaletteOpen(true)}
+            title="Komut paleti (⌘K)"
+            style={{
+              background: 'transparent', border: `1px solid ${PALETTE.border}`,
+              color: PALETTE.textDim, padding: '7px 10px', borderRadius: 5,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              fontSize: 12, fontFamily: 'DM Sans',
+            }}>
+            <Search size={13} strokeWidth={1.6} /> Komut Paleti
+            <kbd style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: PALETTE.textMuted, padding: '1px 5px', background: PALETTE.surfaceAlt, borderRadius: 3, marginLeft: 4 }}>⌘K</kbd>
+          </button>
           <button style={{
             background: 'transparent', border: `1px solid ${PALETTE.border}`,
             color: PALETTE.textDim, padding: '7px 10px', borderRadius: 5,
@@ -1772,20 +1938,28 @@ ${reviewersHtml}
         />
 
         <main style={{ flex: 1, padding: '28px 32px', minWidth: 0, overflowY: 'auto' }}>
-          {activeSection === 'cover' && <CoverSection cover={cover} setCover={setCover} issue={issue} setIssue={setIssue} journal={journal} onGenerateIntro={generateIntroParagraphs} introGenerating={introGenerating} />}
-          {activeSection === 'masthead' && <MastheadSection masthead={masthead} setMasthead={setMasthead} journal={journal} />}
-          {activeSection === 'board' && <BoardSection board={board} setBoard={setBoard} />}
-          {activeSection === 'indexing' && <IndexingSection indexing={indexing} setIndexing={setIndexing} />}
-          {activeSection === 'toc' && <TocSection paginated={paginated} journal={journal} issue={issue} />}
-          {activeSection === 'articles' && (
-            <ArticlesSection
-              paginated={paginated} journal={journal} issue={issue}
-              setArticles={setArticles} addArticle={addArticle}
-              draggedId={draggedId} overId={overId}
-              setDraggedId={setDraggedId} setOverId={setOverId}
-            />
-          )}
-          {activeSection === 'reviewers' && <ReviewersSection reviewers={reviewers} setReviewers={setReviewers} />}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeSection}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+            >
+              {activeSection === 'cover' && <CoverSection cover={cover} setCover={setCover} issue={issue} setIssue={setIssue} journal={journal} onGenerateIntro={generateIntroParagraphs} introGenerating={introGenerating} />}
+              {activeSection === 'masthead' && <MastheadSection masthead={masthead} setMasthead={setMasthead} journal={journal} />}
+              {activeSection === 'board' && <BoardSection board={board} setBoard={setBoard} />}
+              {activeSection === 'indexing' && <IndexingSection indexing={indexing} setIndexing={setIndexing} />}
+              {activeSection === 'toc' && <TocSection paginated={paginated} journal={journal} issue={issue} />}
+              {activeSection === 'articles' && (
+                <ArticlesSection
+                  paginated={paginated} journal={journal} issue={issue}
+                  setArticles={setArticles} addArticle={addArticle}
+                />
+              )}
+              {activeSection === 'reviewers' && <ReviewersSection reviewers={reviewers} setReviewers={setReviewers} />}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>
