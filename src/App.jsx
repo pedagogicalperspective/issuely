@@ -12,22 +12,30 @@ import {
 // Frontmatter sections: Cover · Masthead · Board · TOC · Reviewers · Indexing
 // =====================================================
 
+// Light theme — Pedapub-inspired clinical academic surface.
+// Cover preview + TOC kâğıt önizlemeleri kendi koyu/krem palette'lerini
+// hardcoded taşır (gerçek çıktı objesini simüle ettikleri için).
 const PALETTE = {
-  bg: '#0B1220',
-  surface: '#131B2E',
-  surfaceAlt: '#1A2440',
-  border: '#243153',
-  borderSoft: '#1B2540',
-  text: '#ECE9DF',
-  textDim: '#8FA0BF',
-  textMuted: '#6B7B98',
-  gold: '#D4A84A',
-  goldDim: '#8E7536',
-  goldGlow: 'rgba(212, 168, 74, 0.1)',
-  paper: '#F4EFE3',
-  success: '#7DBF8F',
-  danger: '#D97874',
-  purple: '#9B89D9',
+  bg: '#FFFFFF',          // page background — pure white
+  surface: '#FAFBFC',     // cards, sidebar
+  surfaceAlt: '#F1F4F8',  // hover, active cells
+  border: '#E2E5EB',      // separators, input borders
+  borderSoft: '#EDF0F4',  // subtler dividers, row separators
+
+  text: '#1A1F2E',        // primary ink — near-black with navy undertone
+  textDim: '#475569',     // secondary — slate-600
+  textMuted: '#94A3B8',   // captions, placeholders — slate-400
+
+  gold: '#A47929',        // deep gold — readable on white (#D4A84A only worked on dark)
+  goldDim: '#6E531C',     // even deeper for borders/labels
+  goldGlow: 'rgba(164, 121, 41, 0.08)',  // accent surface tint
+
+  paper: '#F4EFE3',       // CREAM — used ONLY for TOC preview bg and cover-preview "cover paper" text
+  coverInk: '#F4EFE3',    // text color INSIDE the dark cover preview (paper-on-navy)
+
+  success: '#16A34A',
+  danger: '#DC2626',
+  purple: '#6366F1',
 };
 
 const FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap';
@@ -380,7 +388,7 @@ const SectionHeader = ({ romanIdx, title, subtitle, count }) => (
       <div>
         <h2 style={{
           fontFamily: 'Fraunces, serif', fontSize: 28, fontWeight: 500,
-          color: PALETTE.paper, margin: 0, letterSpacing: -0.5, lineHeight: 1,
+          color: PALETTE.text, margin: 0, letterSpacing: -0.5, lineHeight: 1,
         }}>{title}</h2>
         <p style={{
           fontSize: 12, color: PALETTE.textDim,
@@ -540,51 +548,54 @@ const CoverSection = ({ cover, setCover, issue, setIssue, journal, onGenerateInt
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 28 }}>
       <div>
         <FieldLabel>Kapak Önizleme</FieldLabel>
+        {/* Cover preview keeps the navy/gold cover look — hardcoded, independent
+            of the light app shell. It represents the actual printed cover. */}
         <div style={{
           aspectRatio: '210 / 297',
-          background: `linear-gradient(135deg, ${PALETTE.surfaceAlt} 0%, ${PALETTE.bg} 100%)`,
-          border: `1px solid ${PALETTE.border}`,
+          background: 'linear-gradient(135deg, #1A2440 0%, #0B1220 100%)',
+          border: '1px solid #1B2540',
           borderRadius: 6,
           padding: '40px 32px',
           display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
           position: 'relative', overflow: 'hidden',
+          boxShadow: '0 10px 30px rgba(15, 23, 42, 0.12)',
         }}>
           <div>
-            <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: PALETTE.goldDim, letterSpacing: 2, textTransform: 'uppercase' }}>
+            <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#D4A84A', letterSpacing: 2, textTransform: 'uppercase' }}>
               eISSN {journal.eissn}
             </div>
             <div style={{
               fontFamily: 'Fraunces, serif', fontSize: 36, fontStyle: 'italic',
-              fontWeight: 500, color: PALETTE.paper, lineHeight: 1.05,
+              fontWeight: 500, color: PALETTE.coverInk, lineHeight: 1.05,
               marginTop: 14, letterSpacing: -1,
             }}>{journal.name}</div>
-            <div style={{ marginTop: 20, fontFamily: 'Fraunces, serif', fontSize: 13, color: PALETTE.textDim, fontStyle: 'italic' }}>
+            <div style={{ marginTop: 20, fontFamily: 'Fraunces, serif', fontSize: 13, color: '#8FA0BF', fontStyle: 'italic' }}>
               An open-access journal of educational research
             </div>
           </div>
           <div>
             <div style={{
               fontFamily: 'JetBrains Mono, monospace', fontSize: 11,
-              color: PALETTE.gold, letterSpacing: 1.5, textTransform: 'uppercase',
+              color: '#D4A84A', letterSpacing: 1.5, textTransform: 'uppercase',
             }}>{cover.thematicFocus}</div>
             <div style={{ marginTop: 16, display: 'flex', alignItems: 'baseline', gap: 14 }}>
-              <span style={{ fontFamily: 'Fraunces, serif', fontSize: 34, color: PALETTE.paper, fontWeight: 500 }}>
+              <span style={{ fontFamily: 'Fraunces, serif', fontSize: 34, color: PALETTE.coverInk, fontWeight: 500 }}>
                 Vol. {issue.volume}
               </span>
-              <span style={{ fontFamily: 'Fraunces, serif', fontSize: 34, color: PALETTE.gold, fontStyle: 'italic' }}>
+              <span style={{ fontFamily: 'Fraunces, serif', fontSize: 34, color: '#D4A84A', fontStyle: 'italic' }}>
                 No. {issue.number}
               </span>
             </div>
-            <div style={{ marginTop: 4, fontFamily: 'Fraunces, serif', fontSize: 16, color: PALETTE.textDim, fontStyle: 'italic' }}>
+            <div style={{ marginTop: 4, fontFamily: 'Fraunces, serif', fontSize: 16, color: '#8FA0BF', fontStyle: 'italic' }}>
               {issue.season} {issue.year}
             </div>
           </div>
           <div style={{
             position: 'absolute', top: 16, right: 18,
             width: 36, height: 36, borderRadius: '50%',
-            border: `1px solid ${PALETTE.goldDim}`,
+            border: '1px solid #8E7536',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'Fraunces, serif', fontSize: 14, fontStyle: 'italic', color: PALETTE.gold,
+            fontFamily: 'Fraunces, serif', fontSize: 14, fontStyle: 'italic', color: '#D4A84A',
           }}>P</div>
         </div>
         <div style={{ marginTop: 10, fontSize: 11, color: PALETTE.textMuted, fontStyle: 'italic', fontFamily: 'DM Sans' }}>
@@ -1125,7 +1136,7 @@ const Sidebar = ({ activeSection, setActiveSection, journal, issue, totalArticle
         <div style={{ fontFamily: 'JetBrains Mono', fontSize: 9, letterSpacing: 2, color: PALETTE.goldDim, textTransform: 'uppercase', marginBottom: 6 }}>
           Aktif Sayı
         </div>
-        <div style={{ fontFamily: 'Fraunces, serif', fontSize: 28, fontWeight: 500, color: PALETTE.paper, lineHeight: 1.05, letterSpacing: -0.8 }}>
+        <div style={{ fontFamily: 'Fraunces, serif', fontSize: 28, fontWeight: 500, color: PALETTE.text, lineHeight: 1.05, letterSpacing: -0.8 }}>
           Cilt {issue.volume}, <span style={{ fontStyle: 'italic', color: PALETTE.gold }}>No. {issue.number}</span>
         </div>
         <div style={{ fontFamily: 'Fraunces, serif', fontSize: 13, color: PALETTE.textDim, marginTop: 4, fontStyle: 'italic' }}>
