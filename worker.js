@@ -1,25 +1,25 @@
-/**
- * Cloudflare Pages Function — Anthropic Claude API proxy
- *
- * POST /api/claude
- * Body: { prompt: string, model?: string, max_tokens?: number }
- * Returns: { text: string } | { error: string, ... }
- *
- * Required environment variable: ANTHROPIC_API_KEY
- * Set in Cloudflare Pages dashboard → Settings → Environment variables (Secret)
- */
+// Cloudflare Worker — Issuely entry point.
+//
+// Routes:
+//   POST /api/claude   → Anthropic Messages API proxy
+//   *                  → static asset from ./dist (with SPA fallback)
+//
+// env.ANTHROPIC_API_KEY must be set as a secret in the dashboard.
+// env.ASSETS is the static-asset binding, configured in wrangler.toml.
 
 const DEFAULT_MODEL = 'claude-sonnet-4-6';
 const DEFAULT_MAX_TOKENS = 1500;
 
-function json(body, status = 200) {
-  return new Response(JSON.stringify(body), {
+const json = (body, status = 200) =>
+  new Response(JSON.stringify(body), {
     status,
     headers: { 'Content-Type': 'application/json' },
   });
-}
 
-export async function onRequestPost({ request, env }) {
+async function handleClaude(request, env) {
+  if (request.method !== 'POST') {
+    return json({ error: 'Sadece POST destekleniyor' }, 405);
+  }
   if (!env.ANTHROPIC_API_KEY) {
     return json({ error: 'ANTHROPIC_API_KEY ortam değişkeni tanımlı değil' }, 500);
   }
@@ -36,7 +36,6 @@ export async function onRequestPost({ request, env }) {
   if (!prompt || typeof prompt !== 'string') {
     return json({ error: 'prompt alanı eksik veya geçersiz' }, 400);
   }
-
   if (prompt.length > 50000) {
     return json({ error: 'prompt çok uzun (max 50.000 karakter)' }, 400);
   }
@@ -64,13 +63,11 @@ export async function onRequestPost({ request, env }) {
           status: upstream.status,
           details: errorText.slice(0, 500),
         },
-        upstream.status
+        upstream.status,
       );
     }
 
     const data = await upstream.json();
-
-    // Extract text from content blocks
     const text = (data.content || [])
       .filter((c) => c.type === 'text')
       .map((c) => c.text)
@@ -82,7 +79,12 @@ export async function onRequestPost({ request, env }) {
   }
 }
 
-// Reject other methods
-export async function onRequest({ request }) {
-  return json({ error: 'Sadece POST destekleniyor' }, 405);
-}
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    if (url.pathname === '/api/claude') {
+      return handleClaude(request, env);
+    }
+    return env.ASSETS.fetch(request);
+  },
+};
