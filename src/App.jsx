@@ -49,7 +49,6 @@ const PALETTE = {
 
   success: '#15803D',
   danger: '#B91C1C',
-  purple: '#4F46E5',
 };
 
 // Global CSS injected at App root — focus rings, reduced motion, shimmer keyframes
@@ -434,22 +433,22 @@ const StatusPill = ({ label, color, dim }) => (
 const SectionHeader = ({ romanIdx, title, subtitle, count }) => (
   <div style={{
     display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
-    marginBottom: 24, paddingBottom: 14,
+    marginBottom: 28, paddingBottom: 18,
     borderBottom: `1px solid ${PALETTE.borderSoft}`,
   }}>
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20 }}>
       <div style={{
-        fontFamily: 'Fraunces, serif', fontSize: 14, fontStyle: 'italic',
-        color: PALETTE.goldDim, paddingTop: 8, minWidth: 24,
-      }}>{romanIdx}</div>
+        fontFamily: 'Fraunces, serif', fontSize: 32, fontStyle: 'italic', fontWeight: 500,
+        color: PALETTE.goldDim, paddingTop: 0, minWidth: 32, lineHeight: 1, letterSpacing: -1,
+      }}>{(romanIdx || '').toUpperCase()}</div>
       <div>
         <h2 style={{
-          fontFamily: 'Fraunces, serif', fontSize: 28, fontWeight: 500,
-          color: PALETTE.text, margin: 0, letterSpacing: -0.5, lineHeight: 1,
+          fontFamily: 'Fraunces, serif', fontSize: 30, fontWeight: 500,
+          color: PALETTE.ink, margin: 0, letterSpacing: -0.7, lineHeight: 1.05,
         }}>{title}</h2>
         <p style={{
-          fontSize: 12, color: PALETTE.textDim,
-          margin: '6px 0 0', fontFamily: 'DM Sans',
+          fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 14, color: PALETTE.textDim,
+          margin: '8px 0 0', maxWidth: 640, lineHeight: 1.5,
         }}>{subtitle}</p>
       </div>
     </div>
@@ -477,10 +476,11 @@ const TextField = ({ value, onChange, placeholder, mono, multiline, rows = 3 }) 
   const style = {
     width: '100%', padding: '10px 12px',
     background: PALETTE.bg, border: `1px solid ${PALETTE.border}`,
-    color: PALETTE.text, borderRadius: 5, outline: 'none',
+    color: PALETTE.text, borderRadius: 4, outline: 'none',
     fontFamily: mono ? 'JetBrains Mono, monospace' : 'DM Sans, sans-serif',
     fontSize: mono ? 12 : 13,
-    transition: 'border 0.15s',
+    lineHeight: 1.55,
+    transition: 'border-color 0.12s ease-out',
     resize: multiline ? 'vertical' : 'none',
     boxSizing: 'border-box',
   };
@@ -611,7 +611,7 @@ const CoverSection = ({ cover, setCover, issue, setIssue, journal, onGenerateInt
           aspectRatio: '210 / 297',
           background: 'linear-gradient(135deg, #1A2440 0%, #0B1220 100%)',
           border: '1px solid #1B2540',
-          borderRadius: 6,
+          borderRadius: 4,
           padding: '40px 32px',
           display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
           position: 'relative', overflow: 'hidden',
@@ -764,7 +764,7 @@ const MastheadSection = ({ masthead, setMasthead, journal }) => {
       <SectionHeader romanIdx="ii" title="Jenerik" subtitle="Künye sayfası: yayıncı bilgisi, iletişim, lisans, yayın modeli." />
       <div style={{
         background: PALETTE.surface, border: `1px solid ${PALETTE.border}`,
-        borderRadius: 8, padding: 24,
+        borderRadius: 4, padding: 24,
       }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -797,7 +797,7 @@ const MastheadSection = ({ masthead, setMasthead, journal }) => {
               </div>
               <div>
                 <FieldLabel>eISSN</FieldLabel>
-                <div style={{ padding: '10px 12px', background: PALETTE.bg, border: `1px solid ${PALETTE.borderSoft}`, borderRadius: 5, fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: PALETTE.goldDim }}>
+                <div style={{ padding: '10px 12px', background: PALETTE.bg, border: `1px solid ${PALETTE.borderSoft}`, borderRadius: 4, fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: PALETTE.goldDim }}>
                   {journal.eissn}
                 </div>
               </div>
@@ -873,7 +873,7 @@ const BoardSection = ({ board, setBoard }) => {
             </div>
             <div style={{
               background: PALETTE.surface, border: `1px solid ${PALETTE.border}`,
-              borderRadius: 6, overflow: 'hidden',
+              borderRadius: 4, overflow: 'hidden',
             }}>
               {g.single ? (
                 <PersonRow person={board.editorInChief}
@@ -926,7 +926,7 @@ const ReviewersSection = ({ reviewers, setReviewers }) => {
       <SectionHeader romanIdx="vi" title="Sayı Hakemleri" subtitle="Bu sayıda hakemlik yapan akademisyenlerin teşekkür listesi. Soyada göre alfabetik sıralanır." count={reviewers.length} />
       <div style={{
         padding: '10px 14px', background: PALETTE.surface,
-        border: `1px solid ${PALETTE.borderSoft}`, borderRadius: 6,
+        border: `1px solid ${PALETTE.borderSoft}`, borderRadius: 4,
         marginBottom: 8,
         display: 'grid',
         gridTemplateColumns: '85px 1fr 1fr 1fr 90px 32px',
@@ -935,7 +935,7 @@ const ReviewersSection = ({ reviewers, setReviewers }) => {
       }}>
         <div>Unvan</div><div>Ad</div><div>Soyad</div><div>Kurum</div><div>Ülke</div><div></div>
       </div>
-      <div style={{ background: PALETTE.surface, border: `1px solid ${PALETTE.border}`, borderRadius: 6, overflow: 'hidden' }}>
+      <div style={{ background: PALETTE.surface, border: `1px solid ${PALETTE.border}`, borderRadius: 4, overflow: 'hidden' }}>
         {sorted.map((p, i) => (
           <PersonRow key={`${p.last}-${p.first}-${i}`} person={p}
             showCountry
@@ -948,7 +948,7 @@ const ReviewersSection = ({ reviewers, setReviewers }) => {
       <div style={{
         marginTop: 16, padding: 14,
         background: PALETTE.surface, border: `1px dashed ${PALETTE.borderSoft}`,
-        borderRadius: 6, fontSize: 11, color: PALETTE.textMuted, fontFamily: 'DM Sans',
+        borderRadius: 4, fontSize: 11, color: PALETTE.textMuted, fontFamily: 'DM Sans',
         display: 'flex', alignItems: 'center', gap: 10,
       }}>
         <Award size={14} color={PALETTE.gold} strokeWidth={1.6} />
@@ -1001,7 +1001,7 @@ const IndexingSection = ({ indexing, setIndexing }) => {
           <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: 17, fontWeight: 500, color: PALETTE.success, margin: '0 0 10px', fontStyle: 'italic' }}>
             Dizinlenenler <span style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: PALETTE.textMuted }}>{indexed.length}</span>
           </h3>
-          <div style={{ background: PALETTE.surface, border: `1px solid ${PALETTE.border}`, borderRadius: 6, overflow: 'hidden' }}>
+          <div style={{ background: PALETTE.surface, border: `1px solid ${PALETTE.border}`, borderRadius: 4, overflow: 'hidden' }}>
             {indexing.map((it, i) => it.status === 'indexed' && (
               <IndexRow key={i} item={it} onUpdate={ni => update(i, ni)} onDelete={() => remove(i)} />
             ))}
@@ -1011,7 +1011,7 @@ const IndexingSection = ({ indexing, setIndexing }) => {
           <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: 17, fontWeight: 500, color: PALETTE.gold, margin: '0 0 10px', fontStyle: 'italic' }}>
             Başvuru Aşamasında <span style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: PALETTE.textMuted }}>{pending.length}</span>
           </h3>
-          <div style={{ background: PALETTE.surface, border: `1px solid ${PALETTE.border}`, borderRadius: 6, overflow: 'hidden' }}>
+          <div style={{ background: PALETTE.surface, border: `1px solid ${PALETTE.border}`, borderRadius: 4, overflow: 'hidden' }}>
             {indexing.map((it, i) => it.status === 'pending' && (
               <IndexRow key={i} item={it} onUpdate={ni => update(i, ni)} onDelete={() => remove(i)} />
             ))}
@@ -1106,7 +1106,7 @@ const ArticleRow = ({ article, index, onUpdate, onDelete, doiString }) => {
             <span>{article.authors.map(a => `${a.first} ${a.last}`).join(', ')}</span>
           </div>
           {expanded && (
-            <div style={{ marginTop: 14, padding: 14, background: PALETTE.bg, borderRadius: 6, border: `1px solid ${PALETTE.borderSoft}` }}>
+            <div style={{ marginTop: 14, padding: 14, background: PALETTE.bg, borderRadius: 4, border: `1px solid ${PALETTE.borderSoft}` }}>
               <FieldLabel>Yazarlar & ORCID</FieldLabel>
               {article.authors.map((au, i) => (
                 <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 6, alignItems: 'center' }}>
@@ -1194,7 +1194,7 @@ const ArticlesSection = ({ paginated, journal, issue, setArticles, addArticle })
       <SectionHeader romanIdx="1" title="Makaleler" subtitle="Sürükleyerek yeniden sırala — sayfa aralıkları ve DOI numaraları anında güncellenir." count={paginated.length} />
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={paginated.map(a => a.id)} strategy={verticalListSortingStrategy}>
-          <div style={{ background: PALETTE.surface, border: `1px solid ${PALETTE.border}`, borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ background: PALETTE.surface, border: `1px solid ${PALETTE.border}`, borderRadius: 4, overflow: 'hidden' }}>
             {paginated.map((a, i) => (
               <ArticleRow
                 key={a.id}
@@ -1277,7 +1277,7 @@ const Sidebar = ({ activeSection, setActiveSection, journal, issue, totalArticle
                   padding: '9px 10px',
                   background: active ? PALETTE.goldGlow : 'transparent',
                   border: active ? `1px solid ${PALETTE.goldDim}` : '1px solid transparent',
-                  borderRadius: 5, cursor: 'pointer',
+                  borderRadius: 4, cursor: 'pointer',
                   fontFamily: 'DM Sans', fontSize: 13,
                   color: active ? PALETTE.gold : PALETTE.textDim,
                   textAlign: 'left', width: '100%',
@@ -1443,7 +1443,7 @@ const CommandPalette = ({ open, setOpen, setActiveSection, onGenerateDocx, onGen
   );
 };
 const paletteGroup = { fontFamily: 'JetBrains Mono, monospace', fontSize: 9, letterSpacing: 1.4, color: PALETTE.textMuted, padding: '8px 10px 4px', textTransform: 'uppercase' };
-const paletteItem = { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 6, cursor: 'pointer', fontFamily: 'DM Sans', fontSize: 14, color: PALETTE.text };
+const paletteItem = { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 4, cursor: 'pointer', fontFamily: 'DM Sans', fontSize: 14, color: PALETTE.text };
 
 // ============== Main App ==============
 
