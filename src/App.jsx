@@ -745,19 +745,15 @@ const CoverSection = ({ cover, setCover, issue, setIssue, journal, onGenerateInt
 
         <div>
           <FieldLabel>Sayı Tanıtım Paragrafı (TR)</FieldLabel>
-          {introGenerating && !cover.introTr ? (
-            <IntroSkeleton lines={5} />
-          ) : (
-            <TextField value={cover.introTr} onChange={v => setCover({ ...cover, introTr: v })} multiline rows={6} />
-          )}
+          <IntroSwap busy={introGenerating && !cover.introTr}
+            value={cover.introTr}
+            onChange={v => setCover({ ...cover, introTr: v })} />
         </div>
         <div>
           <FieldLabel>Issue Introduction (EN)</FieldLabel>
-          {introGenerating && !cover.introEn ? (
-            <IntroSkeleton lines={5} />
-          ) : (
-            <TextField value={cover.introEn} onChange={v => setCover({ ...cover, introEn: v })} multiline rows={6} />
-          )}
+          <IntroSwap busy={introGenerating && !cover.introEn}
+            value={cover.introEn}
+            onChange={v => setCover({ ...cover, introEn: v })} />
         </div>
       </div>
     </div>
@@ -779,6 +775,32 @@ const IntroSkeleton = ({ lines = 5 }) => (
       }} />
     ))}
   </div>
+);
+
+// Cross-fade between AI shimmer skeleton and editable TextField with blur,
+// so the moment the AI delivers reads as "this content materialized."
+const IntroSwap = ({ busy, value, onChange }) => (
+  <AnimatePresence mode="wait" initial={false}>
+    {busy ? (
+      <motion.div key="skel"
+        initial={{ opacity: 0, filter: 'blur(4px)' }}
+        animate={{ opacity: 1, filter: 'blur(0px)' }}
+        exit={{ opacity: 0, filter: 'blur(4px)' }}
+        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <IntroSkeleton lines={5} />
+      </motion.div>
+    ) : (
+      <motion.div key="field"
+        initial={{ opacity: 0, filter: 'blur(4px)' }}
+        animate={{ opacity: 1, filter: 'blur(0px)' }}
+        exit={{ opacity: 0, filter: 'blur(2px)' }}
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <TextField value={value} onChange={onChange} multiline rows={6} />
+      </motion.div>
+    )}
+  </AnimatePresence>
 );
 
 // ============== Masthead Section ==============
@@ -1131,7 +1153,16 @@ const ArticleRow = ({ article, index, onUpdate, onDelete, doiString }) => {
             <Users size={12} weight="regular" />
             <span>{article.authors.map(a => `${a.first} ${a.last}`).join(', ')}</span>
           </div>
+          <AnimatePresence initial={false}>
           {expanded && (
+            <motion.div
+              key="expanded"
+              initial={{ opacity: 0, height: 0, filter: 'blur(4px)' }}
+              animate={{ opacity: 1, height: 'auto', filter: 'blur(0px)' }}
+              exit={{ opacity: 0, height: 0, filter: 'blur(2px)' }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              style={{ overflow: 'hidden' }}
+            >
             <div style={{ marginTop: 14, padding: 14, background: PALETTE.bg, borderRadius: 4, border: `1px solid ${PALETTE.borderSoft}` }}>
               <FieldLabel>Yazarlar & ORCID</FieldLabel>
               {article.authors.map((au, i) => (
@@ -1166,7 +1197,9 @@ const ArticleRow = ({ article, index, onUpdate, onDelete, doiString }) => {
                 </div>
               </div>
             </div>
+            </motion.div>
           )}
+          </AnimatePresence>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <button onClick={() => setExpanded(!expanded)}
@@ -1391,33 +1424,39 @@ const CommandPalette = ({ open, setOpen, setActiveSection, onGenerateDocx, onGen
   const go = (id) => { setActiveSection(id); setOpen(false); };
   const run = (fn) => { fn(); setOpen(false); };
 
-  if (!open) return null;
-
   return (
-    <div
-      onClick={() => setOpen(false)}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 100,
-        background: 'rgba(11,18,32,.45)', backdropFilter: 'blur(4px)',
-        display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-        paddingTop: '15vh',
-      }}
-    >
-      <motion.div
-        initial={{ opacity: 0, y: -8, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.15 }}
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: 'min(560px, 92vw)',
-          background: PALETTE.bg,
-          border: `1px solid ${PALETTE.border}`,
-          borderRadius: 12,
-          boxShadow: '0 30px 60px -20px rgba(11,18,32,.35)',
-          overflow: 'hidden',
-        }}
-      >
-        <Command label="Komut Paleti">
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          key="palette-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
+          onClick={() => setOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 100,
+            background: 'rgba(11,18,32,.45)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+            paddingTop: '15vh',
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.98, filter: 'blur(4px)' }}
+            animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: -4, scale: 0.99, filter: 'blur(2px)' }}
+            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 'min(560px, 92vw)',
+              background: PALETTE.bg,
+              border: `1px solid ${PALETTE.border}`,
+              borderRadius: 12,
+              boxShadow: '0 30px 60px -20px rgba(11,18,32,.35)',
+              overflow: 'hidden',
+            }}
+          >
+            <Command label="Komut Paleti">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: `1px solid ${PALETTE.borderSoft}` }}>
             <Search size={16} color={PALETTE.textMuted} />
             <Command.Input
@@ -1463,9 +1502,11 @@ const CommandPalette = ({ open, setOpen, setActiveSection, onGenerateDocx, onGen
               </Command.Item>
             </Command.Group>
           </Command.List>
-        </Command>
-      </motion.div>
-    </div>
+            </Command>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 const paletteGroup = { fontFamily: 'JetBrains Mono, monospace', fontSize: 9, letterSpacing: 1.4, color: PALETTE.textMuted, padding: '8px 10px 4px', textTransform: 'uppercase' };

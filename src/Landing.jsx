@@ -31,14 +31,30 @@ const ROOT_STYLES = `
       animation-iteration-count: 1 !important;
     }
   }
-  .ily-link { transition: color 120ms ease-out; }
+  .ily-link { transition: color 150ms ease-out; }
   .ily-link:hover { color: var(--ink); }
-  .ily-btn { transition: opacity 120ms ease-out, background 120ms ease-out; }
+  .ily-btn { transition: opacity 150ms ease-out, background 150ms ease-out, transform 80ms ease-out; }
   .ily-btn:hover { opacity: .92; }
-  .ily-faq-q { transition: color 120ms ease-out; }
+  .ily-btn:active { transform: scale(0.985); }
+  .ily-faq-q { transition: color 150ms ease-out; }
   .ily-faq-q:hover { color: var(--gold-deep); }
   .ily-mod-row { border-top: 1px solid var(--rule); }
   .ily-mod-row:last-child { border-bottom: 1px solid var(--rule); }
+
+  /* FAQ accordion smooth height transition without framer-motion */
+  .ily-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease-out;
+    opacity: 0;
+  }
+  .ily-collapse.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+  .ily-collapse > div { overflow: hidden; }
+  .ily-faq-icon { transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1); }
+  .ily-faq-icon.open { transform: rotate(180deg); }
 `;
 
 const openApp = (e) => {
@@ -492,17 +508,19 @@ function QItem({ q, a }) {
         padding: '24px 0', background: 'transparent', border: 0, cursor: 'pointer',
         fontFamily: SERIF_D, fontSize: 22, fontWeight: 500, color: 'var(--ink)',
         textAlign: 'left', letterSpacing: -0.4, lineHeight: 1.3,
-      }}>
+      }} aria-expanded={open}>
         <span>{q}</span>
-        <span style={{ marginLeft: 16, color: 'var(--gold-deep)', display: 'inline-flex', alignItems: 'center' }}>
-          {open ? <Minus size={18} strokeWidth={1.4} /> : <Plus size={18} strokeWidth={1.4} />}
+        <span className={`ily-faq-icon ${open ? 'open' : ''}`} style={{ marginLeft: 16, color: 'var(--gold-deep)', display: 'inline-flex', alignItems: 'center' }}>
+          {open ? <Minus size={18} weight="regular" /> : <Plus size={18} weight="regular" />}
         </span>
       </button>
-      {open && (
-        <p style={{ fontFamily: SERIF_B, fontSize: 17, lineHeight: 1.7, color: 'var(--ink-2)', padding: '0 0 28px', margin: 0, maxWidth: 720 }}>
-          {a}
-        </p>
-      )}
+      <div className={`ily-collapse ${open ? 'open' : ''}`} aria-hidden={!open}>
+        <div>
+          <p style={{ fontFamily: SERIF_B, fontSize: 17, lineHeight: 1.7, color: 'var(--ink-2)', padding: '0 0 28px', margin: 0, maxWidth: 720 }}>
+            {a}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
