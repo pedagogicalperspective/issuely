@@ -34,7 +34,9 @@ import {
   ShieldCheck,
   WarningCircle,
   Warning as WarningTriangle,
-  Info
+  Info,
+  Quotes,
+  ArrowSquareOut
 } from '@phosphor-icons/react';
 import { Toaster, toast } from 'sonner';
 import {
@@ -255,8 +257,59 @@ const seedArticles = () => {
     titleTr: a.titleTr, titleEn: a.titleEn,
     authors: a.authors.map(([first, last, orcid]) => ({ first, last, orcid })),
     pages: a.pages, type: a.type, keywords: a.keywords,
+    references: '',
   }));
 };
+
+// ============== Citation Auditor helpers ==============
+
+const DOI_RE = /\b10\.\d{4,9}\/[^\s,;)\]>"]+/;
+
+// Pulls non-empty lines out of pasted reference text. Newlines separate refs;
+// a single ref can span multiple lines if it's wrapped, so we treat blank
+// lines as separators and join wrapped lines with a space.
+const parseReferenceList = (text) => {
+  if (!text || typeof text !== 'string') return [];
+  return text
+    .split(/\n\s*\n/)               // blank-line separated entries
+    .flatMap(block => block.split(/\r?\n/).join(' ').trim())
+    .filter(Boolean)
+    .filter(line => line.length > 8);
+};
+
+const extractDoi = (line) => {
+  const m = DOI_RE.exec(line);
+  if (!m) return null;
+  // Strip trailing punctuation that DOI regex sometimes catches
+  return m[0].replace(/[.,;:)\]]+$/, '');
+};
+
+// Calls Crossref REST. 200 → valid + meta, 404 → broken, other → unknown.
+// Returns { status, meta? }. Polite delay should be added by caller.
+const validateDoiAgainstCrossref = async (doi) => {
+  try {
+    const res = await fetch(`https://api.crossref.org/works/${encodeURIComponent(doi)}`, {
+      headers: { 'Accept': 'application/json' },
+    });
+    if (res.status === 404) return { status: 'broken' };
+    if (!res.ok) return { status: 'unknown', error: `HTTP ${res.status}` };
+    const data = await res.json();
+    const work = data.message || {};
+    const firstAuthor = (work.author || [])[0];
+    return {
+      status: 'valid',
+      meta: {
+        title: (work.title || [])[0] || '(no title)',
+        author: firstAuthor ? `${firstAuthor.family || ''}${firstAuthor.given ? ', ' + firstAuthor.given : ''}` : '',
+        year: (work.issued?.['date-parts']?.[0] || [])[0] || '',
+        container: (work['container-title'] || [])[0] || '',
+      },
+    };
+  } catch (e) {
+    return { status: 'unknown', error: e.message || String(e) };
+  }
+};
+
 
 // ============== Utilities ==============
 
@@ -629,6 +682,7 @@ const SECTIONS = [
   { id: 'articles', label: 'Makaleler', icon: FileText, romanIdx: '1' },
   { id: 'reviewers', label: 'Sayı Hakemleri', icon: UserCheck, romanIdx: 'vi' },
   { id: 'precheck', label: 'Kalite Kontrolü', icon: ShieldCheck, romanIdx: 'vii' },
+  { id: 'citations', label: 'Atıf Denetimi', icon: Quotes, romanIdx: 'viii' },
 ];
 
 // ============== UI primitives ==============
@@ -1788,6 +1842,221 @@ const PrecheckSection = ({ checks, onJump, onAiRequest, onAiApply }) => {
   );
 };
 
+// ============== Citation Auditor Section ==============
+
+const CITATION_STATUS_META = {
+  valid:   { color: '#16A34A', label: 'Geçerli',  icon: Check },
+  broken:  { color: '#DC2626', label: 'Bozuk',    icon: WarningCircle },
+  unknown: { color: '#D97706', label: 'Bilinmez', icon: WarningTriangle },
+  'no-doi':{ color: PALETTE.textMuted, label: 'DOI Yok', icon: Info },
+};
+
+const CitationAuditSection = ({ paginated, setArticles, auditResults, runAudit, auditingId }) => {
+  const [selectedId, setSelectedId] = useState(paginated[0]?.id || null);
+  const selected = paginated.find(a => a.id === selectedId);
+  const results = selected ? auditResults[selected.id] : null;
+
+  const updateReferences = (text) => {
+    if (!selected) return;
+    setArticles(prev => prev.map(a => a.id === selected.id ? { ...a, references: text } : a));
+  };
+
+  // Roll-up totals across all audited articles
+  const overall = useMemo(() => {
+    const all = Object.values(auditResults).flat();
+    return {
+      valid: all.filter(r => r.status === 'valid').length,
+      broken: all.filter(r => r.status === 'broken').length,
+      unknown: all.filter(r => r.status === 'unknown').length,
+      noDoi: all.filter(r => r.status === 'no-doi').length,
+      total: all.length,
+      auditedCount: Object.keys(auditResults).length,
+    };
+  }, [auditResults]);
+
+  return (
+    <>
+      <SectionHeader
+        romanIdx="viii"
+        title="Atıf Denetimi"
+        subtitle="Her makalenin referans listesini yapıştır, Crossref REST API ile DOI doğrulaması yap. Kırık atıflar yayın öncesi yakalanır."
+        count={paginated.length}
+      />
+
+      {/* Roll-up summary */}
+      {overall.total > 0 && (
+        <div style={{
+          marginBottom: 24, padding: '14px 18px',
+          background: PALETTE.surface, border: `1px solid ${PALETTE.borderSoft}`,
+          borderRadius: 10,
+          display: 'flex', alignItems: 'center', gap: 22, flexWrap: 'wrap',
+        }}>
+          <div style={{ fontFamily: 'Fraunces, serif', fontSize: 15, color: PALETTE.text, fontStyle: 'italic' }}>
+            {overall.auditedCount} makale tarandı · {overall.total} atıf kontrol edildi:
+          </div>
+          {[
+            { key: 'valid', count: overall.valid },
+            { key: 'broken', count: overall.broken },
+            { key: 'unknown', count: overall.unknown },
+            { key: 'no-doi', count: overall.noDoi },
+          ].map(({ key, count }) => {
+            const meta = CITATION_STATUS_META[key];
+            const Icon = meta.icon;
+            return (
+              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontFamily: 'DM Sans', color: count > 0 ? meta.color : PALETTE.textMuted }}>
+                <Icon size={13} weight="fill" />
+                <span style={{ fontWeight: 600 }}>{count}</span>
+                <span>{meta.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Article picker */}
+      <div style={{ marginBottom: 20 }}>
+        <FieldLabel>Makale Seç</FieldLabel>
+        <select value={selectedId || ''} onChange={e => setSelectedId(e.target.value)}
+          style={{
+            width: '100%', padding: '10px 12px',
+            background: PALETTE.bg, border: `1px solid ${PALETTE.border}`,
+            color: PALETTE.text, borderRadius: 6, outline: 'none',
+            fontFamily: 'DM Sans', fontSize: 13,
+          }}>
+          {paginated.map((a, i) => {
+            const tally = auditResults[a.id];
+            const tallyText = tally
+              ? ` · ✓${tally.filter(r => r.status === 'valid').length} ✗${tally.filter(r => r.status === 'broken').length}`
+              : '';
+            return (
+              <option key={a.id} value={a.id}>
+                {padNumber(i + 1)} · {(a.titleTr || a.titleEn || 'Untitled').slice(0, 90)}{tallyText}
+              </option>
+            );
+          })}
+        </select>
+      </div>
+
+      {selected && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+          {/* References input */}
+          <div>
+            <FieldLabel>Referans Listesi</FieldLabel>
+            <textarea
+              value={selected.references || ''}
+              onChange={e => updateReferences(e.target.value)}
+              placeholder={'Tüm referans listesini yapıştır — her satır bir kaynak.\n\nÖrnek:\nSmith, J. (2023). Title of article. Journal of X, 10(2), 1-15. https://doi.org/10.1000/xyz123\nDoe, A. (2024). Another article. https://doi.org/10.1234/abc456'}
+              rows={18}
+              style={{
+                width: '100%', padding: '12px 14px',
+                background: PALETTE.bg, border: `1px solid ${PALETTE.border}`,
+                color: PALETTE.text, borderRadius: 6, outline: 'none',
+                fontFamily: 'JetBrains Mono, monospace', fontSize: 11.5, lineHeight: 1.6,
+                resize: 'vertical', boxSizing: 'border-box',
+              }}
+              onFocus={e => e.currentTarget.style.borderColor = PALETTE.gold}
+              onBlur={e => e.currentTarget.style.borderColor = PALETTE.border}
+            />
+            <button onClick={() => runAudit(selected.id)} disabled={auditingId === selected.id || !selected.references}
+              style={{
+                marginTop: 12, padding: '10px 16px',
+                background: auditingId === selected.id ? PALETTE.surfaceAlt : PALETTE.text,
+                color: auditingId === selected.id ? PALETTE.textDim : '#FFF',
+                border: 'none', borderRadius: 6,
+                cursor: !selected.references ? 'not-allowed' : (auditingId === selected.id ? 'wait' : 'pointer'),
+                opacity: !selected.references ? 0.5 : 1,
+                fontFamily: 'DM Sans', fontSize: 13, fontWeight: 600,
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}>
+              <ShieldCheck size={14} weight="bold" />
+              {auditingId === selected.id ? 'Tarama yapılıyor…' : 'Crossref ile Tara'}
+            </button>
+            <div style={{ marginTop: 10, fontSize: 11, color: PALETTE.textMuted, fontFamily: 'DM Sans', fontStyle: 'italic' }}>
+              Tarama Crossref API'sine 1 sn arayla istek atar (politely-paced). 30 referans ≈ 30 saniye sürer.
+            </div>
+          </div>
+
+          {/* Results */}
+          <div>
+            <FieldLabel>Sonuçlar</FieldLabel>
+            {!results ? (
+              <div style={{
+                padding: '40px 20px', textAlign: 'center',
+                background: PALETTE.surface, border: `1px dashed ${PALETTE.borderSoft}`,
+                borderRadius: 8, color: PALETTE.textMuted, fontFamily: 'DM Sans', fontSize: 13,
+              }}>
+                Bu makale için henüz tarama yapılmadı. Sol panele referansları yapıştır ve "Crossref ile Tara" butonuna bas.
+              </div>
+            ) : results.length === 0 ? (
+              <div style={{ padding: '20px', color: PALETTE.textMuted, fontFamily: 'DM Sans', fontSize: 13 }}>
+                Referans bulunamadı (boş veya çok kısa satırlar).
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 600, overflowY: 'auto', paddingRight: 4 }}>
+                {results.map((r, i) => {
+                  const meta = CITATION_STATUS_META[r.status];
+                  const Icon = meta.icon;
+                  return (
+                    <div key={i} style={{
+                      padding: '10px 12px',
+                      background: PALETTE.surface,
+                      border: `1px solid ${PALETTE.borderSoft}`,
+                      borderLeft: `3px solid ${meta.color}`,
+                      borderRadius: 6,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                        <Icon size={13} weight="fill" color={meta.color} />
+                        <span style={{ fontSize: 10, letterSpacing: 1, color: meta.color, fontFamily: 'DM Sans', fontWeight: 600, textTransform: 'uppercase' }}>
+                          {meta.label}
+                        </span>
+                        {r.doi && (
+                          <a href={`https://doi.org/${r.doi}`} target="_blank" rel="noreferrer"
+                            style={{
+                              fontSize: 10, fontFamily: 'JetBrains Mono', color: PALETTE.gold,
+                              textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3,
+                            }}>
+                            {r.doi}
+                            <ArrowSquareOut size={9} weight="bold" />
+                          </a>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 11, color: PALETTE.text, fontFamily: 'DM Sans', lineHeight: 1.5, marginBottom: r.meta ? 6 : 0 }}>
+                        {r.raw.length > 200 ? r.raw.slice(0, 200) + '…' : r.raw}
+                      </div>
+                      {r.meta && (
+                        <div style={{ fontSize: 10, color: PALETTE.textDim, fontFamily: 'DM Sans', fontStyle: 'italic', padding: '6px 8px', background: PALETTE.bg, borderRadius: 4, marginTop: 4 }}>
+                          Crossref: {r.meta.author && <strong>{r.meta.author}</strong>}{r.meta.year && ` (${r.meta.year})`}. {r.meta.title}{r.meta.container && `. ${r.meta.container}`}
+                        </div>
+                      )}
+                      {r.error && (
+                        <div style={{ fontSize: 10, color: PALETTE.textMuted, fontFamily: 'DM Sans', marginTop: 4 }}>
+                          {r.error}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div style={{
+        marginTop: 24, padding: '12px 16px',
+        background: PALETTE.surface, border: `1px dashed ${PALETTE.borderSoft}`,
+        borderRadius: 8, fontSize: 11, color: PALETTE.textMuted, fontFamily: 'DM Sans',
+        display: 'flex', alignItems: 'flex-start', gap: 10,
+      }}>
+        <Info size={13} weight="regular" style={{ marginTop: 1, flexShrink: 0 }} />
+        <span>
+          Crossref API yalnızca DOI ile kayıtlı yayınları çözer. Eski/yerel dergiler, kitap bölümleri ve raporlar "DOI Yok" olarak işaretlenir — bu bir hata değil. Bozuk DOI'ler yazardan revize talep edilmesi gereken kritik hatalardır.
+        </span>
+      </div>
+    </>
+  );
+};
+
 // ============== Sidebar ==============
 
 const Sidebar = ({ activeSection, setActiveSection, journal, issue, totalArticles, totalPages, totalBoard, totalReviewers, totalIndexing, onGenerateDocx, docxGenerating, onGenerateCrossref, crossrefGenerating, onGenerateCoverImage, coverImageGenerating, precheckErrors = 0, precheckWarnings = 0 }) => {
@@ -2078,12 +2347,52 @@ export default function App() {
   const precheckErrors = precheckResults.filter(c => c.severity === 'error').length;
   const precheckWarnings = precheckResults.filter(c => c.severity === 'warning').length;
 
+  // Citation Auditor state — { [articleId]: [{ raw, doi, status, meta?, error? }] }
+  const [auditResults, setAuditResults] = useState({});
+  const [auditingId, setAuditingId] = useState(null);
+  const runAudit = async (articleId) => {
+    const article = articles.find(a => a.id === articleId);
+    if (!article || !article.references) return;
+    setAuditingId(articleId);
+    try {
+      const refs = parseReferenceList(article.references);
+      const results = [];
+      for (const raw of refs) {
+        const doi = extractDoi(raw);
+        if (!doi) {
+          results.push({ raw, doi: null, status: 'no-doi' });
+          // Update incrementally so the UI shows progress
+          setAuditResults(prev => ({ ...prev, [articleId]: [...results] }));
+          continue;
+        }
+        const verdict = await validateDoiAgainstCrossref(doi);
+        results.push({ raw, doi, ...verdict });
+        setAuditResults(prev => ({ ...prev, [articleId]: [...results] }));
+        // Polite 1 req/sec to respect Crossref's public API guidance
+        await new Promise(r => setTimeout(r, 1000));
+      }
+      const broken = results.filter(r => r.status === 'broken').length;
+      const valid = results.filter(r => r.status === 'valid').length;
+      if (broken > 0) {
+        toast.warning(`${broken} bozuk atıf bulundu`, { description: `${valid} geçerli, ${results.length - broken - valid} DOI'siz/bilinmez` });
+      } else {
+        toast.success('Tarama tamam', { description: `${valid} geçerli atıf, bozuk yok` });
+      }
+    } catch (e) {
+      console.error('Citation audit failed:', e);
+      toast.error('Atıf taraması başarısız', { description: e.message || String(e) });
+    } finally {
+      setAuditingId(null);
+    }
+  };
+
   const addArticle = () => {
     const newArt = {
       id: `art-${Date.now()}`,
       titleTr: 'Yeni makale başlığı', titleEn: 'New article title',
       authors: [{ first: 'Yazar', last: 'Adı', orcid: '0000-0000-0000-0000' }],
       pages: 15, type: 'research', keywords: [],
+      references: '',
     };
     setArticles(prev => [...prev, newArt]);
   };
@@ -2757,6 +3066,15 @@ ${reviewersHtml}
                   onJump={setActiveSection}
                   onAiRequest={requestAiFix}
                   onAiApply={applyAiFix}
+                />
+              )}
+              {activeSection === 'citations' && (
+                <CitationAuditSection
+                  paginated={paginated}
+                  setArticles={setArticles}
+                  auditResults={auditResults}
+                  runAudit={runAudit}
+                  auditingId={auditingId}
                 />
               )}
             </motion.div>
