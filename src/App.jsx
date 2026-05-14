@@ -444,8 +444,8 @@ const EISSN_RE = /^\d{4}-\d{3}[\dX]$/i;
 
 const runQualityChecks = ({ journal, issue, paginated, cover, masthead, board, reviewers, indexing }) => {
   const out = [];
-  const push = (severity, category, title, detail, jumpTo) =>
-    out.push({ id: `${category}-${out.length}`, severity, category, title, detail, jumpTo });
+  const push = (severity, category, title, detail, jumpTo, aiFix) =>
+    out.push({ id: `${category}-${out.length}`, severity, category, title, detail, jumpTo, aiFix });
 
   // ---- Journal ----
   if (!EISSN_RE.test(String(journal.eissn || '').trim())) {
@@ -463,7 +463,8 @@ const runQualityChecks = ({ journal, issue, paginated, cover, masthead, board, r
     push('warning', 'Sayı', 'Sezon belirtilmemiş', 'Bahar / Yaz / Güz / Kış — kapakta ve frontmatter\'da kullanılır', 'cover');
   }
   if (!cover.thematicFocus || cover.thematicFocus.length < 4) {
-    push('warning', 'Sayı', 'Tematik odak boş', 'Kapakta öne çıkacak vurgu cümlesi (örn. "AI Literacy in Teacher Education")', 'cover');
+    push('warning', 'Sayı', 'Tematik odak boş', 'Kapakta öne çıkacak vurgu cümlesi (örn. "AI Literacy in Teacher Education")', 'cover',
+      paginated.length > 0 ? { type: 'suggestThematicFocus' } : undefined);
   }
   if (!cover.introTr || cover.introTr.length < 80) {
     push('warning', 'Sayı', 'Tanıtım paragrafı (TR) çok kısa', 'En az 80 karakter önerilir. AI butonunu kullanabilirsin.', 'cover');
@@ -527,10 +528,12 @@ const runQualityChecks = ({ journal, issue, paginated, cover, masthead, board, r
     const titleSnippet = (a.titleTr || a.titleEn || '').slice(0, 60);
 
     if (!a.titleTr || a.titleTr.length < 6) {
-      push('error', 'Makaleler', `${label} — başlık TR eksik`, titleSnippet || '(başlık boş)', 'articles');
+      push('error', 'Makaleler', `${label} — başlık TR eksik`, titleSnippet || '(başlık boş)', 'articles',
+        a.titleEn && a.titleEn.length >= 6 ? { type: 'translateTitleToTr', articleId: a.id } : undefined);
     }
     if (!a.titleEn || a.titleEn.length < 6) {
-      push('warning', 'Makaleler', `${label} — başlık EN eksik`, 'İki dilli dergilerde EN başlık zorunlu', 'articles');
+      push('warning', 'Makaleler', `${label} — başlık EN eksik`, 'İki dilli dergilerde EN başlık zorunlu', 'articles',
+        a.titleTr && a.titleTr.length >= 6 ? { type: 'translateTitleToEn', articleId: a.id } : undefined);
     }
     if (a.titleTr && a.titleTr.split(/\s+/).length > 20) {
       push('info', 'Makaleler', `${label} — başlık çok uzun (TR)`, `${a.titleTr.split(/\s+/).length} kelime, 12-15 önerilir`, 'articles');
@@ -557,9 +560,11 @@ const runQualityChecks = ({ journal, issue, paginated, cover, masthead, board, r
     }
 
     if (!a.keywords || a.keywords.length === 0) {
-      push('warning', 'Makaleler', `${label} — anahtar kelime yok`, '3-5 anahtar kelime önerilir', 'articles');
+      push('warning', 'Makaleler', `${label} — anahtar kelime yok`, '3-5 anahtar kelime önerilir', 'articles',
+        (a.titleTr || a.titleEn) ? { type: 'suggestKeywords', articleId: a.id } : undefined);
     } else if (a.keywords.length < 3) {
-      push('info', 'Makaleler', `${label} — sadece ${a.keywords.length} anahtar kelime`, '3-5 önerilir', 'articles');
+      push('info', 'Makaleler', `${label} — sadece ${a.keywords.length} anahtar kelime`, '3-5 önerilir', 'articles',
+        (a.titleTr || a.titleEn) ? { type: 'suggestKeywords', articleId: a.id } : undefined);
     }
 
     if (!a.pages || a.pages < 1) {
@@ -1514,11 +1519,33 @@ const SummaryStat = ({ severity, count }) => {
   );
 };
 
-const PrecheckSection = ({ checks, onJump }) => {
+const PrecheckSection = ({ checks, onJump, onAiRequest, onAiApply }) => {
   const errorCount = checks.filter(c => c.severity === 'error').length;
   const warningCount = checks.filter(c => c.severity === 'warning').length;
   const infoCount = checks.filter(c => c.severity === 'info').length;
   const total = checks.length;
+
+  // Per-item AI fix state: { [itemId]: { loading, suggestion, error, applied } }
+  const [aiState, setAiState] = useState({});
+
+  const startAiFix = async (item) => {
+    setAiState(s => ({ ...s, [item.id]: { loading: true } }));
+    try {
+      const suggestion = await onAiRequest(item.aiFix);
+      setAiState(s => ({ ...s, [item.id]: { suggestion } }));
+    } catch (e) {
+      setAiState(s => ({ ...s, [item.id]: { error: e.message || String(e) } }));
+    }
+  };
+
+  const applyAndClose = (item) => {
+    const value = aiState[item.id]?.suggestion;
+    if (value == null) return;
+    onAiApply(item.aiFix, value);
+    setAiState(s => ({ ...s, [item.id]: { applied: true, suggestion: value } }));
+  };
+
+  const rejectAi = (itemId) => setAiState(s => ({ ...s, [itemId]: undefined }));
 
   // Group by category, ordered so the highest-severity buckets surface first.
   const groups = useMemo(() => {
@@ -1618,46 +1645,126 @@ const PrecheckSection = ({ checks, onJump }) => {
                 {group.items.map((item, i) => {
                   const meta = SEVERITY_META[item.severity];
                   const Icon = meta.icon;
+                  const ai = aiState[item.id];
+                  const canAi = !!item.aiFix && !!onAiRequest;
                   return (
                     <div key={item.id} style={{
-                      display: 'flex', alignItems: 'flex-start', gap: 14,
-                      padding: '14px 16px',
                       borderBottom: i < group.items.length - 1 ? `1px solid ${PALETTE.borderSoft}` : 'none',
                     }}>
                       <div style={{
-                        marginTop: 2,
-                        color: meta.color,
-                        flexShrink: 0,
+                        display: 'flex', alignItems: 'flex-start', gap: 14,
+                        padding: '14px 16px',
                       }}>
-                        <Icon size={18} weight="fill" />
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
-                          <SeverityBadge severity={item.severity} />
-                          <span style={{ fontFamily: 'DM Sans', fontSize: 13, fontWeight: 500, color: PALETTE.text }}>
-                            {item.title}
-                          </span>
+                        <div style={{ marginTop: 2, color: meta.color, flexShrink: 0 }}>
+                          <Icon size={18} weight="fill" />
                         </div>
-                        <div style={{ fontSize: 12, color: PALETTE.textDim, fontFamily: 'DM Sans', lineHeight: 1.5 }}>
-                          {item.detail}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
+                            <SeverityBadge severity={item.severity} />
+                            <span style={{ fontFamily: 'DM Sans', fontSize: 13, fontWeight: 500, color: PALETTE.text }}>
+                              {item.title}
+                            </span>
+                            {ai?.applied && (
+                              <span style={{
+                                fontFamily: 'JetBrains Mono', fontSize: 9, fontWeight: 600,
+                                padding: '2px 7px', borderRadius: 999,
+                                color: PALETTE.success || '#16A34A',
+                                background: (PALETTE.success || '#16A34A') + '14',
+                                border: `1px solid ${(PALETTE.success || '#16A34A')}33`,
+                                letterSpacing: 0.5, textTransform: 'uppercase',
+                              }}>AI Uygulandı</span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 12, color: PALETTE.textDim, fontFamily: 'DM Sans', lineHeight: 1.5 }}>
+                            {item.detail}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                          {canAi && !ai?.suggestion && !ai?.applied && (
+                            <button onClick={() => startAiFix(item)} disabled={ai?.loading}
+                              style={{
+                                padding: '6px 10px',
+                                background: ai?.loading ? PALETTE.surfaceAlt : PALETTE.goldGlow,
+                                border: `1px solid ${PALETTE.goldDim}40`,
+                                color: ai?.loading ? PALETTE.textDim : PALETTE.gold,
+                                fontFamily: 'DM Sans', fontSize: 11, fontWeight: 500,
+                                borderRadius: 5, cursor: ai?.loading ? 'wait' : 'pointer',
+                                display: 'flex', alignItems: 'center', gap: 4,
+                                transition: 'all 0.12s',
+                              }}>
+                              <Sparkles size={11} weight={ai?.loading ? 'regular' : 'fill'} />
+                              {ai?.loading ? 'Üretiliyor…' : 'AI ile öner'}
+                            </button>
+                          )}
+                          {item.jumpTo && onJump && (
+                            <button onClick={() => onJump(item.jumpTo)}
+                              style={{
+                                padding: '6px 10px',
+                                background: 'transparent', border: `1px solid ${PALETTE.border}`,
+                                color: PALETTE.textDim, fontFamily: 'DM Sans', fontSize: 11,
+                                borderRadius: 5, cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', gap: 4,
+                                transition: 'all 0.12s',
+                              }}
+                              onMouseEnter={e => { e.currentTarget.style.borderColor = PALETTE.gold; e.currentTarget.style.color = PALETTE.gold; }}
+                              onMouseLeave={e => { e.currentTarget.style.borderColor = PALETTE.border; e.currentTarget.style.color = PALETTE.textDim; }}
+                            >
+                              Düzelt
+                              <ChevronRight size={11} weight="bold" />
+                            </button>
+                          )}
                         </div>
                       </div>
-                      {item.jumpTo && onJump && (
-                        <button onClick={() => onJump(item.jumpTo)}
-                          style={{
-                            flexShrink: 0, padding: '6px 10px',
-                            background: 'transparent', border: `1px solid ${PALETTE.border}`,
-                            color: PALETTE.textDim, fontFamily: 'DM Sans', fontSize: 11,
-                            borderRadius: 5, cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', gap: 4,
-                            transition: 'all 0.12s',
-                          }}
-                          onMouseEnter={e => { e.currentTarget.style.borderColor = PALETTE.gold; e.currentTarget.style.color = PALETTE.gold; }}
-                          onMouseLeave={e => { e.currentTarget.style.borderColor = PALETTE.border; e.currentTarget.style.color = PALETTE.textDim; }}
-                        >
-                          Düzelt
-                          <ChevronRight size={11} weight="bold" />
-                        </button>
+
+                      {/* AI suggestion expand */}
+                      {(ai?.suggestion != null && !ai?.applied) && (
+                        <div style={{
+                          margin: '0 16px 14px 48px', padding: '12px 14px',
+                          background: PALETTE.surfaceAlt,
+                          border: `1px solid ${PALETTE.goldDim}30`,
+                          borderRadius: 6,
+                        }}>
+                          <div style={{ fontSize: 10, letterSpacing: 1.2, color: PALETTE.gold, textTransform: 'uppercase', fontFamily: 'DM Sans', marginBottom: 6, fontWeight: 600 }}>
+                            <Sparkles size={11} weight="fill" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
+                            AI önerisi
+                          </div>
+                          <div style={{ fontSize: 13, color: PALETTE.text, fontFamily: 'DM Sans', lineHeight: 1.5, marginBottom: 10 }}>
+                            {Array.isArray(ai.suggestion) ? ai.suggestion.join(' · ') : ai.suggestion}
+                          </div>
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button onClick={() => applyAndClose(item)}
+                              style={{
+                                padding: '6px 12px',
+                                background: PALETTE.gold, border: 'none',
+                                color: '#FFF', fontFamily: 'DM Sans', fontSize: 12, fontWeight: 600,
+                                borderRadius: 5, cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', gap: 4,
+                              }}>
+                              <Check size={12} weight="bold" /> Uygula
+                            </button>
+                            <button onClick={() => rejectAi(item.id)}
+                              style={{
+                                padding: '6px 12px',
+                                background: 'transparent', border: `1px solid ${PALETTE.border}`,
+                                color: PALETTE.textDim, fontFamily: 'DM Sans', fontSize: 12,
+                                borderRadius: 5, cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', gap: 4,
+                              }}>
+                              <X size={12} weight="bold" /> Reddet
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* AI error */}
+                      {ai?.error && (
+                        <div style={{
+                          margin: '0 16px 14px 48px', padding: '8px 12px',
+                          background: '#DC262610', border: '1px solid #DC262633', borderRadius: 6,
+                          fontSize: 12, color: '#DC2626', fontFamily: 'DM Sans',
+                        }}>
+                          AI önerisi alınamadı: {ai.error}
+                        </div>
                       )}
                     </div>
                   );
@@ -1979,6 +2086,106 @@ export default function App() {
       pages: 15, type: 'research', keywords: [],
     };
     setArticles(prev => [...prev, newArt]);
+  };
+
+  // ============== AI helpers (shared) ==============
+  // Generic Anthropic proxy caller. Throws on non-OK. Returns trimmed text.
+  const callAI = async (prompt, maxTokens = 800) => {
+    const response = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, model: 'claude-sonnet-4-6', max_tokens: maxTokens }),
+    });
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => '');
+      throw new Error(`API yanıt vermedi (${response.status})${errorBody ? ': ' + errorBody : ''}`);
+    }
+    const data = await response.json();
+    return (data.text || '').trim();
+  };
+
+  // Request an AI suggestion for a specific precheck-fix payload.
+  // Returns the suggestion value (string or string[]) — UI decides whether
+  // to apply it via applyAiFix.
+  const requestAiFix = async (aiFix) => {
+    const article = aiFix.articleId ? paginated.find(a => a.id === aiFix.articleId) : null;
+
+    switch (aiFix.type) {
+      case 'translateTitleToEn': {
+        const prompt = `Translate this Turkish academic article title to English. Match the tone of peer-reviewed journal titles in education / social sciences. Keep it concise (8-15 words). Return ONLY the translated title — no preamble, no quotes, no explanation.
+
+TR: "${article.titleTr}"
+Article type: ${article.type}
+${article.keywords?.length ? `Keywords: ${article.keywords.join(', ')}` : ''}`;
+        return (await callAI(prompt, 200)).replace(/^["']|["']$/g, '');
+      }
+
+      case 'translateTitleToTr': {
+        const prompt = `Bu İngilizce akademik makale başlığını Türkçeye çevir. Hakemli eğitim/sosyal bilimler dergisi başlığı tarzında, akademik dilde. 8-15 kelime arası tut. Sadece çeviriyi döndür — açıklama veya tırnak yok.
+
+EN: "${article.titleEn}"
+Makale türü: ${article.type}
+${article.keywords?.length ? `Anahtar kelimeler: ${article.keywords.join(', ')}` : ''}`;
+        return (await callAI(prompt, 200)).replace(/^["']|["']$/g, '');
+      }
+
+      case 'suggestKeywords': {
+        const prompt = `Suggest 4-5 academic keywords for this article. Use the article's primary language (Turkish if the TR title is set, English otherwise). Return ONLY a comma-separated list of keywords — no preamble, no numbering.
+
+TR title: ${article.titleTr || '(missing)'}
+EN title: ${article.titleEn || '(missing)'}
+Article type: ${article.type}`;
+        const text = await callAI(prompt, 200);
+        return text
+          .replace(/^[-*\d.\s]+/gm, '')
+          .split(/[,;\n]/)
+          .map(s => s.trim())
+          .filter(s => s && s.length < 60);
+      }
+
+      case 'suggestThematicFocus': {
+        const articlesSummary = paginated
+          .map((a, i) => `${i + 1}. "${a.titleEn || a.titleTr}"${a.keywords?.length ? ` [${a.keywords.slice(0, 3).join(', ')}]` : ''}`)
+          .join('\n');
+        const prompt = `Based on these ${paginated.length} articles, suggest a thematic focus phrase in ENGLISH UPPERCASE (3-7 words) that captures the issue's overarching theme. This goes on the cover.
+
+Examples of good output:
+- AI LITERACY IN TEACHER EDUCATION
+- POST-PANDEMIC HIGHER EDUCATION RESEARCH
+- DIGITAL TRANSFORMATION IN K-12 CLASSROOMS
+
+Return ONLY the phrase, nothing else.
+
+Articles:
+${articlesSummary}`;
+        return (await callAI(prompt, 100)).replace(/^["']|["']$/g, '').toUpperCase();
+      }
+
+      default:
+        throw new Error(`Unknown aiFix type: ${aiFix.type}`);
+    }
+  };
+
+  // Persist an AI suggestion into the appropriate slice of state.
+  const applyAiFix = (aiFix, value) => {
+    switch (aiFix.type) {
+      case 'translateTitleToEn':
+        setArticles(prev => prev.map(a => a.id === aiFix.articleId ? { ...a, titleEn: value } : a));
+        toast.success('Uygulandı', { description: 'Başlık EN güncellendi' });
+        break;
+      case 'translateTitleToTr':
+        setArticles(prev => prev.map(a => a.id === aiFix.articleId ? { ...a, titleTr: value } : a));
+        toast.success('Uygulandı', { description: 'Başlık TR güncellendi' });
+        break;
+      case 'suggestKeywords':
+        setArticles(prev => prev.map(a => a.id === aiFix.articleId ? { ...a, keywords: value } : a));
+        toast.success('Uygulandı', { description: `${value.length} anahtar kelime eklendi` });
+        break;
+      case 'suggestThematicFocus':
+        setCover(c => ({ ...c, thematicFocus: value }));
+        toast.success('Uygulandı', { description: 'Tematik odak güncellendi' });
+        break;
+    }
   };
 
   // ============== AI Intro Paragraph Generator ==============
@@ -2544,7 +2751,14 @@ ${reviewersHtml}
                 />
               )}
               {activeSection === 'reviewers' && <ReviewersSection reviewers={reviewers} setReviewers={setReviewers} />}
-              {activeSection === 'precheck' && <PrecheckSection checks={precheckResults} onJump={setActiveSection} />}
+              {activeSection === 'precheck' && (
+                <PrecheckSection
+                  checks={precheckResults}
+                  onJump={setActiveSection}
+                  onAiRequest={requestAiFix}
+                  onAiApply={applyAiFix}
+                />
+              )}
             </motion.div>
           </AnimatePresence>
         </main>
