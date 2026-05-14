@@ -1,601 +1,666 @@
-import { useEffect, useState } from 'react';
-import { ArrowUpRight, Plus, Minus } from '@phosphor-icons/react';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  BookOpen,
+  FileText,
+  FileCode,
+  Image as ImageIcon,
+  Sparkle,
+  Hash,
+  UserCheck,
+  ArrowRight,
+  ArrowUpRight,
+  Plus,
+  Minus,
+  Check,
+  GithubLogo,
+} from '@phosphor-icons/react';
 
-const FONTS_HREF = 'https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap';
+const WORKSPACE_HREF = '#/app';
 
-// Display: EB Garamond, a Robert Slimbach revival of Claude Garamont's 16c
-// types. University-press credible, not on the "tasteful SaaS Fraunces" lane.
-const SERIF_D = '"EB Garamond", "Adobe Garamond Pro", "Garamond", Georgia, serif';
-const SERIF_B = '"Source Serif 4", "Source Serif Pro", Georgia, serif';
-const SANS = '"DM Sans", system-ui, -apple-system, sans-serif';
-const MONO = '"JetBrains Mono", ui-monospace, monospace';
+// =====================================================================
+// Navbar — sticky, condenses on scroll
+// =====================================================================
 
-const ROOT_STYLES = `
-  :root {
-    --paper:    oklch(94.5% 0.018 78);
-    --paper-2:  oklch(96.2% 0.012 80);
-    --paper-3:  oklch(91.8% 0.022 76);
-    --ink:      oklch(22% 0.020 252);
-    --ink-2:    oklch(36% 0.018 250);
-    --ink-3:    oklch(54% 0.014 248);
-    --ink-4:    oklch(72% 0.010 246);
-    --gold:     oklch(56% 0.092 78);
-    --gold-deep: oklch(42% 0.082 76);
-    --gold-soft: oklch(56% 0.092 78 / .10);
-    --rule:     oklch(36% 0.018 250 / .14);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      animation-duration: 0.01ms !important;
-      transition-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-    }
-  }
-  .ily-link { transition: color 150ms ease-out; }
-  .ily-link:hover { color: var(--ink); }
-  .ily-btn { transition: opacity 150ms ease-out, background 150ms ease-out, transform 80ms ease-out; }
-  .ily-btn:hover { opacity: .92; }
-  .ily-btn:active { transform: scale(0.985); }
-  .ily-faq-q { transition: color 150ms ease-out; }
-  .ily-faq-q:hover { color: var(--gold-deep); }
-  .ily-mod-row { border-top: 1px solid var(--rule); }
-  .ily-mod-row:last-child { border-bottom: 1px solid var(--rule); }
+function Navbar() {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
-  /* FAQ accordion smooth height transition without framer-motion */
-  .ily-collapse {
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease-out;
-    opacity: 0;
-  }
-  .ily-collapse.open {
-    grid-template-rows: 1fr;
-    opacity: 1;
-  }
-  .ily-collapse > div { overflow: hidden; }
-  .ily-faq-icon { transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1); }
-  .ily-faq-icon.open { transform: rotate(180deg); }
-`;
+  const navLinks = [
+    { href: '#features', label: 'Features' },
+    { href: '#pricing', label: 'Pricing' },
+    { href: '#faq', label: 'FAQ' },
+  ];
 
-const openApp = (e) => {
-  e?.preventDefault?.();
-  window.location.hash = '#/app';
-};
-
-// =====================================================
-// Navbar — editorial masthead
-// =====================================================
-function Masthead() {
   return (
-    <header style={{
-      position: 'sticky', top: 0, zIndex: 50,
-      background: 'var(--paper)',
-      borderBottom: '1px solid var(--rule)',
-    }}>
-      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '18px 28px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-        <a href="#/" onClick={(e) => { e.preventDefault(); window.location.hash = '#/'; window.scrollTo({ top: 0 }); }}
-           style={{ textDecoration: 'none', color: 'var(--ink)', display: 'flex', alignItems: 'baseline', gap: 14 }}>
-          <span style={{ fontFamily: SERIF_D, fontWeight: 600, fontSize: 28, letterSpacing: -0.8, lineHeight: 1 }}>Issuely</span>
-          <span style={{ fontFamily: SERIF_D, fontStyle: 'italic', fontWeight: 400, fontSize: 13, color: 'var(--ink-3)' }}>journal issue workshop</span>
+    <header
+      className={[
+        'sticky top-0 z-50 w-full transition-colors duration-200',
+        scrolled
+          ? 'bg-paper/85 backdrop-blur-md border-b border-border'
+          : 'bg-transparent border-b border-transparent',
+      ].join(' ')}
+    >
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <a href="#/" className="group flex items-baseline gap-2">
+          <span className="font-display text-2xl font-semibold italic tracking-tight text-gold">
+            Issuely
+          </span>
+          <span className="hidden font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim sm:inline">
+            Issue Workspace
+          </span>
         </a>
 
-        <nav style={{ display: 'flex', alignItems: 'baseline', gap: 28 }} className="ily-nav">
-          <a href="#modules" className="ily-link" style={navLink}>Modules</a>
-          <a href="#workflow" className="ily-link" style={navLink}>Workflow</a>
-          <a href="#pricing" className="ily-link" style={navLink}>Pricing</a>
-          <a href="#questions" className="ily-link" style={navLink}>Questions</a>
-          <a href="#/app" onClick={openApp} className="ily-btn" style={{
-            fontFamily: SANS, fontSize: 13, fontWeight: 600, color: 'var(--paper)',
-            background: 'var(--ink)', padding: '9px 16px', borderRadius: 4,
-            textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6,
-          }}>Open the editor</a>
+        <nav className="hidden items-center gap-8 md:flex">
+          {navLinks.map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              className="text-sm text-ink-2 transition-colors hover:text-ink"
+            >
+              {l.label}
+            </a>
+          ))}
         </nav>
+
+        <a
+          href={WORKSPACE_HREF}
+          className="group inline-flex items-center gap-1.5 rounded-md bg-ink px-4 py-2 text-sm font-medium text-paper transition-colors hover:bg-ink/90"
+        >
+          Open Workspace
+          <ArrowRight
+            size={14}
+            weight="bold"
+            className="transition-transform group-hover:translate-x-0.5"
+          />
+        </a>
       </div>
     </header>
   );
 }
-const navLink = { fontFamily: SANS, fontSize: 13, fontWeight: 500, color: 'var(--ink-3)', textDecoration: 'none' };
 
-// =====================================================
-// Hero — left-aligned editorial opening
-// =====================================================
+// =====================================================================
+// Hero — animated headline (word-by-word stagger fade-up)
+// =====================================================================
+
+function AnimatedHeadline({ children }) {
+  const words = children.split(' ');
+  return (
+    <h1 className="font-display text-[44px] leading-[1.05] tracking-[-0.025em] text-ink sm:text-6xl md:text-7xl">
+      {words.map((word, i) => (
+        <motion.span
+          key={`${word}-${i}`}
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            duration: 0.55,
+            ease: [0.22, 1, 0.36, 1],
+            delay: 0.05 + i * 0.06,
+          }}
+          className="inline-block whitespace-pre"
+        >
+          {word}
+          {i < words.length - 1 ? ' ' : ''}
+        </motion.span>
+      ))}
+    </h1>
+  );
+}
+
 function Hero() {
   return (
-    <section style={{ borderBottom: '1px solid var(--rule)' }}>
-      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '96px 28px 88px', display: 'grid', gridTemplateColumns: '1.05fr .95fr', gap: 72, alignItems: 'start' }} className="ily-hero">
-        {/* Left: editorial title */}
-        <div>
-          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.18em', color: 'var(--gold-deep)', textTransform: 'uppercase', marginBottom: 28 }}>
-            Volume 0 · Issue 5 · Beta
-          </div>
-
-          <h1 style={{ fontFamily: SERIF_D, fontSize: 84, lineHeight: 0.96, fontWeight: 500, letterSpacing: -2.2, margin: 0, color: 'var(--ink)' }}>
-            A workshop for<br />
-            assembling the<br />
-            <em style={{ fontStyle: 'italic', fontWeight: 500, color: 'var(--gold-deep)' }}>journal issue</em>.
-          </h1>
-
-          <p style={{ fontFamily: SERIF_B, fontSize: 19, lineHeight: 1.6, color: 'var(--ink-2)', marginTop: 36, maxWidth: 520 }}>
-            Issuely takes the editor through the seven frontmatter modules of an academic issue,
-            calculates DOIs and page ranges as articles are reordered, and exports the Crossref
-            5.3.1 deposit and the print-ready DOCX. Built for editors who would rather not own a
-            spreadsheet.
-          </p>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 28, marginTop: 40 }}>
-            <a href="#/app" onClick={openApp} className="ily-btn" style={{
-              fontFamily: SANS, fontSize: 14, fontWeight: 600,
-              color: 'var(--paper)', background: 'var(--ink)',
-              padding: '14px 22px', borderRadius: 4,
-              textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8,
-              border: '1px solid var(--ink)',
-            }}>
-              Open the editor <ArrowUpRight size={15} strokeWidth={1.6} />
-            </a>
-            <a href="#workflow" className="ily-link" style={{
-              fontFamily: SANS, fontSize: 14, fontWeight: 500, color: 'var(--ink-2)',
-              textDecoration: 'underline', textUnderlineOffset: 4, textDecorationThickness: 1,
-            }}>
-              See the five steps
-            </a>
-          </div>
-        </div>
-
-        {/* Right: TOC artifact, full opacity, no shadow */}
-        <TocArtifact />
-      </div>
-
-      {/* Editorial credit line under hero */}
-      <div style={{ borderTop: '1px solid var(--rule)', background: 'var(--paper-2)' }}>
-        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '14px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 16 }}>
-          <span style={{ fontFamily: SERIF_B, fontStyle: 'italic', fontSize: 13, color: 'var(--ink-3)' }}>
-            In active use by <span style={{ color: 'var(--ink-2)' }}>Pedagogical Perspective</span>, an open-access journal of educational research.
+    <section className="relative overflow-hidden">
+      {/* Subtle radial accent in the upper-left, brings warmth without busyness */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -left-32 -top-32 h-[480px] w-[480px] rounded-full opacity-60"
+        style={{
+          background:
+            'radial-gradient(closest-side, rgba(164,121,41,0.10), transparent)',
+        }}
+      />
+      <div className="relative mx-auto max-w-6xl px-6 pt-16 pb-24 md:pt-24 md:pb-32">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="mb-7 inline-flex items-center gap-2 rounded-full border border-border bg-paper-2 px-3 py-1 text-xs"
+        >
+          <span className="size-1.5 rounded-full bg-gold" />
+          <span className="font-mono uppercase tracking-[0.16em] text-ink-2">
+            Free during beta · v0.6
           </span>
-          <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--ink-4)', textTransform: 'uppercase' }}>
-            eISSN 2822-4841 · DOI prefix 10.29329
-          </span>
-        </div>
+        </motion.div>
+
+        <AnimatedHeadline>
+          From manuscripts to a finished issue — in minutes.
+        </AnimatedHeadline>
+
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, ease: 'easeOut', delay: 0.55 }}
+          className="mt-7 max-w-2xl text-[17px] leading-relaxed text-ink-2 md:text-lg"
+        >
+          Frontmatter DOCX, Crossref XML deposit, cover artwork, reviewer
+          credits. One workspace that turns a folder of accepted manuscripts
+          into a peer-reviewed issue ready to ship.
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut', delay: 0.75 }}
+          className="mt-9 flex flex-wrap items-center gap-3"
+        >
+          <a
+            href={WORKSPACE_HREF}
+            className="group inline-flex items-center gap-2 rounded-md bg-ink px-5 py-3 text-sm font-medium text-paper transition-colors hover:bg-ink/90"
+          >
+            Open Workspace
+            <ArrowRight
+              size={15}
+              weight="bold"
+              className="transition-transform group-hover:translate-x-0.5"
+            />
+          </a>
+          <a
+            href="#features"
+            className="inline-flex items-center gap-2 rounded-md border border-border bg-paper px-5 py-3 text-sm font-medium text-ink-2 transition-colors hover:border-gold hover:text-ink"
+          >
+            See what it does
+          </a>
+        </motion.div>
+
+        {/* Sample-cover artifact — gives the eye something to anchor on */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.94, y: 30 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.85 }}
+          className="relative mx-auto mt-20 max-w-md"
+        >
+          <CoverArtifact />
+        </motion.div>
       </div>
     </section>
   );
 }
 
-function TocArtifact() {
-  const articles = [
-    { n: 1, t: 'AI literacy and teacher readiness', a: 'Yılmaz, A.; Demir, B.', p: '1–18' },
-    { n: 2, t: 'Digital transformation in social studies', a: 'Kaya, M.', p: '19–34' },
-    { n: 3, t: 'Metacognitive strategies in middle school', a: 'Şahin, E.; Yıldız, C.', p: '35–52' },
-    { n: 4, t: 'Post-pandemic classroom climate', a: 'Aksoy, F.', p: '53–68' },
-    { n: 5, t: 'Attitude and achievement in STEM', a: 'Öztürk, S.; Çelik, R.', p: '69–84' },
-    { n: 6, t: 'Pre-service teachers and AI ethics', a: 'Tan, H.', p: '85–98' },
-  ];
+// =====================================================================
+// Hero supporting visual — miniature of the actual cover output
+// =====================================================================
+
+function CoverArtifact() {
   return (
-    <figure style={{ margin: 0 }}>
-      <div style={{
-        background: 'var(--paper-2)',
-        border: '1px solid var(--rule)',
-        padding: '36px 36px 28px',
-      }}>
-        <div style={{ borderBottom: '1px solid var(--rule)', paddingBottom: 16 }}>
-          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: 'var(--gold-deep)', textTransform: 'uppercase' }}>
-            Volume 5 · Issue 1 · Spring 2026
+    <div
+      className="aspect-[210/297] overflow-hidden rounded-md border border-navy-2 px-8 pt-9 pb-10 shadow-[0_18px_50px_-12px_rgba(15,23,42,0.35)]"
+      style={{
+        background: 'linear-gradient(135deg, #1A2440 0%, #0B1220 100%)',
+      }}
+    >
+      <div className="flex h-full flex-col justify-between">
+        <div>
+          <div className="font-mono text-[9px] tracking-[0.22em] text-gold uppercase">
+            eISSN 2822-4841
           </div>
-          <div style={{ fontFamily: SERIF_D, fontSize: 22, fontWeight: 600, color: 'var(--ink)', marginTop: 8, letterSpacing: -0.4 }}>
+          <div
+            className="mt-3 font-display text-[26px] font-medium italic leading-[1.04] tracking-[-0.02em] text-cream"
+          >
             Pedagogical Perspective
           </div>
-          <div style={{ fontFamily: SERIF_B, fontStyle: 'italic', fontSize: 12, color: 'var(--ink-3)', marginTop: 2 }}>
-            Table of contents
+          <div className="mt-4 font-display text-[11px] italic text-[#8FA0BF]">
+            An open-access journal of educational research
           </div>
         </div>
-        <ol style={{ listStyle: 'none', margin: '4px 0 0', padding: 0 }}>
-          {articles.map(x => (
-            <li key={x.n} style={{ display: 'grid', gridTemplateColumns: '28px 1fr 56px', gap: 14, padding: '11px 0', borderBottom: '1px solid var(--rule)', alignItems: 'baseline' }}>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--ink-4)' }}>{String(x.n).padStart(2, '0')}</span>
-              <div>
-                <div style={{ fontFamily: SERIF_B, fontSize: 14, color: 'var(--ink)', lineHeight: 1.3 }}>{x.t}</div>
-                <div style={{ fontFamily: SERIF_B, fontStyle: 'italic', fontSize: 12, color: 'var(--ink-3)', marginTop: 2 }}>{x.a}</div>
-              </div>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--ink-3)', textAlign: 'right' }}>{x.p}</span>
-            </li>
-          ))}
-        </ol>
-      </div>
-      <figcaption style={{ fontFamily: SERIF_B, fontStyle: 'italic', fontSize: 12, color: 'var(--ink-3)', marginTop: 14, paddingLeft: 4 }}>
-        Fig. I — A live issue rendered from Issuely's editor. DOI and page ranges recompute on reorder.
-      </figcaption>
-    </figure>
-  );
-}
-
-// =====================================================
-// Editorial note — replaces "trust by" strip
-// =====================================================
-function EditorialNote() {
-  return (
-    <section style={{ background: 'var(--paper-2)', borderBottom: '1px solid var(--rule)' }}>
-      <div style={{ maxWidth: 880, margin: '0 auto', padding: '64px 28px' }}>
-        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.18em', color: 'var(--gold-deep)', textTransform: 'uppercase' }}>
-          Editor's note
-        </div>
-        <p style={{ fontFamily: SERIF_B, fontSize: 22, lineHeight: 1.5, color: 'var(--ink)', marginTop: 16, fontWeight: 400 }}>
-          Most journal-issue tools are spreadsheets in disguise: rows of authors, columns of pages,
-          a panic on the last day before deposit. Issuely is the opposite. It treats an issue the way
-          a print compositor would: <em style={{ fontStyle: 'italic', color: 'var(--ink-2)' }}>frontmatter first</em>, articles next,
-          standards always.
-        </p>
-      </div>
-    </section>
-  );
-}
-
-// =====================================================
-// Modules — replaces 6-card grid with editorial prose blocks
-// =====================================================
-function Modules() {
-  const items = [
-    {
-      r: '1',
-      title: 'Frontmatter, all of it.',
-      lede: 'Cover, masthead, editorial board, section editors, indexing, reviewers, table of contents.',
-      body: 'Six modules in one workspace. Each carries its own format conventions — ORCID under board members, ROR under publisher, season-name under volume. Nothing is left to be assembled by hand on the morning of the deposit.',
-      tag: 'Standards: ORCID v3 · ROR · ISSN',
-    },
-    {
-      r: '2',
-      title: 'Crossref deposit, one click.',
-      lede: 'A complete Crossref 5.3.1 XML for every article in the issue, with batch identifier and timestamp.',
-      body: 'Multiple authors with affiliations, ORCID identifiers, normalized publish dates, DOI segments — assembled into one deposit ready to upload. No more hand-editing XML in a text editor at midnight.',
-      tag: 'Schema: Crossref 5.3.1 deposit',
-    },
-    {
-      r: '3',
-      title: 'DOI and pagination, automatic.',
-      lede: 'Write the DOI pattern once. Pages and identifiers recompute every time the issue is reordered.',
-      body: 'A pattern like 10.29329/pedper.{year}.{volume}.{issue}.{number} resolves automatically. Drag an article up or down: page-start, page-end, and DOI segment update for every article that moves with it.',
-      tag: 'Sequenced: Pages, DOI, both',
-    },
-    {
-      r: '4',
-      title: 'Issue introduction, drafted.',
-      lede: 'Claude Sonnet drafts the editor\'s opening paragraph, in Turkish and in English, in parallel.',
-      body: 'Provide the thematic focus. Issuely composes two short paragraphs in the voice of an editor-in-chief — substantive framing, not "we are excited to present." Editable, attributable, optional.',
-      tag: 'Engine: Anthropic Claude Sonnet 4.6',
-    },
-    {
-      r: '5',
-      title: 'Reorder by hand.',
-      lede: 'Drag-and-drop sequencing, keyboard-accessible, with live recalculation.',
-      body: 'No drag-handle to chase across the screen. Pick up any article with the keyboard or pointer; the sequence and its derived numbers reflect immediately. ⌘K opens a palette to jump to any module without lifting hands.',
-      tag: 'Built on @dnd-kit · WCAG AA',
-    },
-    {
-      r: '6',
-      title: 'Word, on demand.',
-      lede: 'Print-ready DOCX of the frontmatter, formatted in the typesetting house\'s vocabulary.',
-      body: 'Cover, masthead table, editorial board with grouped sections, indexing keywords, reviewer roll, table of contents. The file opens in Word as a finished document, not a draft to clean up.',
-      tag: 'Output: Word HTML (DOCX-compatible)',
-    },
-  ];
-
-  return (
-    <section id="modules" style={{ borderBottom: '1px solid var(--rule)' }}>
-      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '112px 28px 96px' }}>
-        <SectionHead
-          romanIdx="I"
-          title={<>What an issue <em style={{ fontStyle: 'italic', color: 'var(--gold-deep)' }}>actually</em> needs.</>}
-          subtitle="Each one earns its place in the sidebar, and each one writes back to the deposit."
-        />
-        <div style={{ marginTop: 64 }}>
-          {items.map((it, i) => (
-            <article key={it.r} className="ily-mod-row" style={{
-              display: 'grid',
-              gridTemplateColumns: '120px 1fr 1fr',
-              gap: 56,
-              padding: '40px 0',
-              alignItems: 'start',
-            }}>
-              <div style={{ fontFamily: SERIF_D, fontStyle: 'italic', fontSize: 56, fontWeight: 500, color: 'var(--gold-deep)', letterSpacing: -1, lineHeight: 0.9 }}>
-                {it.r}
-              </div>
-              <div>
-                <h3 style={{ fontFamily: SERIF_D, fontSize: 30, fontWeight: 500, letterSpacing: -0.7, margin: 0, color: 'var(--ink)', lineHeight: 1.15 }}>
-                  {it.title}
-                </h3>
-                <p style={{ fontFamily: SERIF_B, fontSize: 16, fontStyle: 'italic', color: 'var(--ink-2)', marginTop: 12, lineHeight: 1.55, maxWidth: 480 }}>
-                  {it.lede}
-                </p>
-                <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--gold-deep)', textTransform: 'uppercase', marginTop: 18 }}>
-                  {it.tag}
-                </div>
-              </div>
-              <p style={{ fontFamily: SERIF_B, fontSize: 16, color: 'var(--ink-2)', margin: 0, lineHeight: 1.7 }}>
-                {it.body}
-              </p>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// =====================================================
-// Workflow — five steps, editorial column
-// =====================================================
-function Workflow() {
-  const steps = [
-    { r: '1', t: 'Set the journal',         d: 'Title, eISSN, DOI prefix, frequency, license, peer-review model. Written once, reused on every issue.' },
-    { r: '2', t: 'Upload the articles',     d: 'Drop or paste the list. Authors, ORCID, page counts, type. Drag to sequence. Page ranges and DOI segments follow.' },
-    { r: '3', t: 'Compose the masthead',    d: 'Editor-in-chief, associate editors, section editors, board, international advisory, reviewers. ORCID and affiliations included.' },
-    { r: '4', t: 'Draft the editor\'s note',d: 'Provide a thematic focus. Issuely drafts the bilingual opening paragraph in the editor-in-chief voice. Read, revise, approve.' },
-    { r: '5', t: 'Export and deposit',      d: 'Frontmatter DOCX into the typesetter\'s workflow. Crossref XML into the deposit form. Done in one afternoon, not one weekend.' },
-  ];
-  return (
-    <section id="workflow" style={{ background: 'var(--paper-2)', borderBottom: '1px solid var(--rule)' }}>
-      <div style={{ maxWidth: 880, margin: '0 auto', padding: '128px 28px 112px' }}>
-        <SectionHead
-          romanIdx="II"
-          title="From rough roster to deposited issue, in five passes."
-          subtitle="The order of operations of a typesetting house, rendered to a single workspace."
-        />
-        <ol style={{ listStyle: 'none', padding: 0, margin: '64px 0 0', display: 'flex', flexDirection: 'column' }}>
-          {steps.map((s, i) => (
-            <li key={s.r} className="ily-mod-row" style={{ display: 'grid', gridTemplateColumns: '76px 1fr', gap: 24, padding: '28px 0', alignItems: 'baseline' }}>
-              <span style={{ fontFamily: SERIF_D, fontStyle: 'italic', fontSize: 40, fontWeight: 500, color: 'var(--gold-deep)', letterSpacing: -0.8, lineHeight: 1 }}>
-                {s.r}
-              </span>
-              <div>
-                <h4 style={{ fontFamily: SERIF_D, fontSize: 24, fontWeight: 500, letterSpacing: -0.5, margin: 0, color: 'var(--ink)', lineHeight: 1.2 }}>
-                  {s.t}
-                </h4>
-                <p style={{ fontFamily: SERIF_B, fontSize: 16, color: 'var(--ink-2)', margin: '6px 0 0', lineHeight: 1.6, maxWidth: 640 }}>
-                  {s.d}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </div>
-    </section>
-  );
-}
-
-// =====================================================
-// Pricing — prose-style comparison table (no card grid)
-// =====================================================
-function Pricing() {
-  const rows = [
-    { feat: 'Journal profiles',                editor: 'One',                   publisher: 'Unlimited',         institution: 'Unlimited' },
-    { feat: 'Frontmatter modules',             editor: 'All six',               publisher: 'All six',           institution: 'All six' },
-    { feat: 'Word (DOCX) export',              editor: '✓',                     publisher: '✓',                 institution: '✓' },
-    { feat: 'DOI and pagination automation',   editor: '✓',                     publisher: '✓',                 institution: '✓' },
-    { feat: 'Crossref deposit XML',            editor: '—',                     publisher: '✓',                 institution: '✓' },
-    { feat: 'AI editor\'s note (TR + EN)',     editor: 'Bring own key',         publisher: 'Included',          institution: 'Included' },
-    { feat: 'Team members and roles',          editor: '—',                     publisher: 'Up to 5',           institution: 'Unlimited' },
-    { feat: 'Cover image generator',           editor: '✓',                     publisher: '✓',                 institution: '✓' },
-    { feat: 'SSO / LDAP',                      editor: '—',                     publisher: '—',                 institution: '✓' },
-    { feat: 'Custom domain',                   editor: '—',                     publisher: '—',                 institution: '✓' },
-    { feat: 'Priority support',                editor: 'Community',             publisher: 'Email',             institution: 'Dedicated' },
-  ];
-
-  const headerCellBase = { fontFamily: SERIF_D, fontWeight: 500, letterSpacing: -0.4, color: 'var(--ink)', padding: '16px 18px', verticalAlign: 'baseline', borderBottom: '1px solid var(--ink-3)' };
-  const cell = { fontFamily: SERIF_B, fontSize: 15, color: 'var(--ink-2)', padding: '16px 18px', verticalAlign: 'baseline', borderBottom: '1px solid var(--rule)' };
-  const goldCell = { fontFamily: SERIF_B, fontSize: 15, color: 'var(--ink)', padding: '16px 18px', verticalAlign: 'baseline', borderBottom: '1px solid var(--rule)', background: 'var(--gold-soft)' };
-
-  return (
-    <section id="pricing" style={{ borderBottom: '1px solid var(--rule)' }}>
-      <div style={{ maxWidth: 1080, margin: '0 auto', padding: '112px 28px 112px' }}>
-        <SectionHead
-          romanIdx="III"
-          title="Three tiers, one published rate sheet."
-          subtitle="No quote forms for the editor tier, no promotional pricing that becomes another rate next quarter."
-        />
-        <div style={{ marginTop: 56, overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
-            <thead>
-              <tr>
-                <th style={{ ...headerCellBase, fontFamily: MONO, fontSize: 10, fontWeight: 600, letterSpacing: 0.16 + 'em', color: 'var(--ink-3)', textTransform: 'uppercase', textAlign: 'left' }}>
-                  Compare
-                </th>
-                <th style={{ ...headerCellBase, fontSize: 22, textAlign: 'left' }}>
-                  Editor
-                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--ink-3)', marginTop: 4 }}>Free · forever</div>
-                </th>
-                <th style={{ ...headerCellBase, fontSize: 22, textAlign: 'left', background: 'var(--gold-soft)', borderBottom: '1px solid var(--gold-deep)' }}>
-                  Publisher
-                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--gold-deep)', marginTop: 4 }}>₺299 / month</div>
-                </th>
-                <th style={{ ...headerCellBase, fontSize: 22, textAlign: 'left' }}>
-                  Institution
-                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--ink-3)', marginTop: 4 }}>By arrangement</div>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r, i) => (
-                <tr key={i}>
-                  <td style={{ ...cell, fontFamily: SANS, fontSize: 13, fontWeight: 500, color: 'var(--ink-2)', width: '28%' }}>{r.feat}</td>
-                  <td style={cell}>{r.editor}</td>
-                  <td style={goldCell}>{r.publisher}</td>
-                  <td style={cell}>{r.institution}</td>
-                </tr>
-              ))}
-              <tr>
-                <td style={{ ...cell, borderBottom: 0 }}></td>
-                <td style={{ ...cell, borderBottom: 0 }}>
-                  <a href="#/app" onClick={openApp} className="ily-btn" style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    fontFamily: SANS, fontWeight: 600, fontSize: 13,
-                    color: 'var(--ink)', textDecoration: 'underline',
-                    textUnderlineOffset: 4, textDecorationThickness: 1,
-                  }}>Start <ArrowUpRight size={13} strokeWidth={1.6} /></a>
-                </td>
-                <td style={{ ...goldCell, borderBottom: 0 }}>
-                  <a href="#/app" onClick={openApp} className="ily-btn" style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    fontFamily: SANS, fontWeight: 600, fontSize: 13,
-                    color: 'var(--paper)', background: 'var(--ink)',
-                    padding: '9px 14px', borderRadius: 4,
-                    textDecoration: 'none',
-                  }}>Open editor <ArrowUpRight size={13} strokeWidth={1.6} /></a>
-                </td>
-                <td style={{ ...cell, borderBottom: 0 }}>
-                  <a href="mailto:hello@issuely.com" className="ily-link" style={{
-                    fontFamily: SANS, fontWeight: 500, fontSize: 13, color: 'var(--ink-2)',
-                    textDecoration: 'underline', textUnderlineOffset: 4, textDecorationThickness: 1,
-                  }}>Write to us</a>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// =====================================================
-// Questions (FAQ) — editorial
-// =====================================================
-function Questions() {
-  const items = [
-    {
-      q: 'Where is the issue data stored?',
-      a: 'In the browser, on the editor\'s machine, by default. Nothing is sent to a server until the editor exports a deposit or triggers the AI editor\'s-note generator. Publisher and Institution plans add encrypted cloud sync for teams.',
-    },
-    {
-      q: 'What schemas and identifier standards does Issuely speak?',
-      a: 'Crossref 5.3.1 for deposit, ORCID v3 fields on every person, ISSN for the publication, DOI patterns for the issue. ROR support for affiliations is on the roadmap.',
-    },
-    {
-      q: 'Is the AI editor\'s note billed separately?',
-      a: 'Publisher and Institution include it. The free Editor tier asks for an Anthropic API key (so the editor pays Anthropic directly for that one feature). Everything else on the free tier is free.',
-    },
-    {
-      q: 'Can two editors work on the same issue?',
-      a: 'Today, no — the workspace is single-editor. Multi-editor collaboration with role-based permissions ships with Publisher in the next minor.',
-    },
-    {
-      q: 'How is Issuely different from DergiPark or OJS?',
-      a: 'DergiPark and OJS run the whole journal. Issuely runs only the issue-assembly step at the end. Editors continue to receive and review articles wherever they are received and reviewed; Issuely takes the accepted articles and turns them into a deposit-ready issue.',
-    },
-    {
-      q: 'Is the editor accessible without a Crossref membership?',
-      a: 'Yes. The Crossref deposit export remains optional — DOCX, cover image, table of contents, and the editor\'s note all work without Crossref. The deposit XML is there for journals that have membership.',
-    },
-  ];
-  return (
-    <section id="questions" style={{ background: 'var(--paper-2)', borderBottom: '1px solid var(--rule)' }}>
-      <div style={{ maxWidth: 880, margin: '0 auto', padding: '96px 28px' }}>
-        <SectionHead
-          romanIdx="IV"
-          title="Read before you write."
-        />
-        <div style={{ marginTop: 56 }}>
-          {items.map((x, i) => <QItem key={i} q={x.q} a={x.a} />)}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function QItem({ q, a }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div style={{ borderTop: '1px solid var(--rule)' }}>
-      <button onClick={() => setOpen(!open)} className="ily-faq-q" style={{
-        width: '100%', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-        padding: '24px 0', background: 'transparent', border: 0, cursor: 'pointer',
-        fontFamily: SERIF_D, fontSize: 22, fontWeight: 500, color: 'var(--ink)',
-        textAlign: 'left', letterSpacing: -0.4, lineHeight: 1.3,
-      }} aria-expanded={open}>
-        <span>{q}</span>
-        <span className={`ily-faq-icon ${open ? 'open' : ''}`} style={{ marginLeft: 16, color: 'var(--gold-deep)', display: 'inline-flex', alignItems: 'center' }}>
-          {open ? <Minus size={18} weight="regular" /> : <Plus size={18} weight="regular" />}
-        </span>
-      </button>
-      <div className={`ily-collapse ${open ? 'open' : ''}`} aria-hidden={!open}>
         <div>
-          <p style={{ fontFamily: SERIF_B, fontSize: 17, lineHeight: 1.7, color: 'var(--ink-2)', padding: '0 0 28px', margin: 0, maxWidth: 720 }}>
-            {a}
-          </p>
+          <div className="font-mono text-[9px] tracking-[0.14em] text-gold uppercase">
+            AI Literacy in Teacher Education
+          </div>
+          <div className="mt-3 flex items-baseline gap-3 font-display">
+            <span className="text-2xl text-cream">Vol. 5</span>
+            <span className="text-2xl italic text-gold">No. 1</span>
+          </div>
+          <div className="mt-1 font-display text-[12px] italic text-[#8FA0BF]">
+            Bahar 2026
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// =====================================================
-// Inline closing paragraph CTA (replaces big CTA block)
-// =====================================================
-function ClosingNote() {
+// =====================================================================
+// Features — six icon cards, scroll-triggered fade-up
+// =====================================================================
+
+const FEATURES = [
+  {
+    icon: FileText,
+    title: 'Frontmatter DOCX',
+    body: 'Cover, masthead, board, indexing, TOC, and reviewers — combined into a Word-compatible document with the click of one button.',
+  },
+  {
+    icon: FileCode,
+    title: 'Crossref XML Deposit',
+    body: 'Schema 5.3.1-compliant deposit XML for the whole issue. ORCID, page ranges, DOIs auto-filled. Drop it into DergiPark or Crossref Direct Deposit.',
+  },
+  {
+    icon: ImageIcon,
+    title: 'Cover Image PNG',
+    body: '1200×1697 print-ready cover, rendered live from your issue metadata. Drop into OJS, social posts, or press releases.',
+  },
+  {
+    icon: Sparkle,
+    title: 'AI Introduction Paragraph',
+    body: 'Editor-in-Chief-grade welcome paragraph in TR + EN, drafted from your article titles and keywords. Substantive, not generic.',
+  },
+  {
+    icon: Hash,
+    title: 'DOI & Pagination, Automated',
+    body: 'Drag to reorder articles — page ranges and DOI suffixes recompute instantly. Nothing to track in a spreadsheet.',
+  },
+  {
+    icon: UserCheck,
+    title: 'Reviewer Acknowledgments',
+    body: 'Maintain a sortable, locale-aware reviewer list. Renders into a printed thank-you page that lives inside the frontmatter.',
+  },
+];
+
+function Features() {
   return (
-    <section style={{ borderBottom: '1px solid var(--rule)' }}>
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '96px 28px' }}>
-        <p style={{ fontFamily: SERIF_B, fontSize: 22, lineHeight: 1.65, color: 'var(--ink-2)', margin: 0 }}>
-          The frontmatter waits for no one, but Issuely is patient with the editor. The editor opens
-          a new issue, populates the modules, exports the deposit. <a href="#/app" onClick={openApp} className="ily-link" style={{ color: 'var(--gold-deep)', textDecoration: 'underline', textUnderlineOffset: 4, textDecorationThickness: 1 }}>Begin a workspace</a>, no card required.
+    <section id="features" className="border-t border-border-soft bg-paper">
+      <div className="mx-auto max-w-6xl px-6 py-24 md:py-32">
+        <SectionLabel>Capabilities</SectionLabel>
+        <SectionTitle>Everything an issue needs, in one workspace.</SectionTitle>
+        <p className="mt-5 max-w-2xl text-[17px] leading-relaxed text-ink-2">
+          Tools chosen for editorial reality, not feature inflation. Each output
+          lands on its target system without manual cleanup.
+        </p>
+
+        <ul className="mt-16 grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map((f, i) => (
+            <motion.li
+              key={f.title}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{
+                duration: 0.5,
+                ease: [0.22, 1, 0.36, 1],
+                delay: i * 0.06,
+              }}
+              className="group bg-paper p-7 transition-colors hover:bg-paper-2"
+            >
+              <div className="inline-flex size-11 items-center justify-center rounded-lg border border-gold/30 bg-gold-glow text-gold transition-colors group-hover:border-gold/60">
+                <f.icon size={20} weight="regular" />
+              </div>
+              <h3 className="mt-5 font-display text-[19px] font-medium text-ink">
+                {f.title}
+              </h3>
+              <p className="mt-2 text-[14px] leading-relaxed text-ink-2">
+                {f.body}
+              </p>
+            </motion.li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+// =====================================================================
+// Pricing — three tiers, middle one highlighted
+// =====================================================================
+
+const PRICING = [
+  {
+    name: 'Editor',
+    price: '$0',
+    cadence: '/ month',
+    blurb: 'For solo editors testing a single issue or evaluating the product.',
+    features: [
+      'One active issue at a time',
+      'Frontmatter DOCX + Crossref XML',
+      'Cover image PNG export',
+      'Up to 20 articles per issue',
+    ],
+    cta: 'Open Workspace',
+    href: WORKSPACE_HREF,
+    featured: false,
+  },
+  {
+    name: 'Journal',
+    price: '$39',
+    cadence: '/ month',
+    blurb:
+      'For a single journal running 2–4 issues a year. The default for most editors.',
+    features: [
+      'Unlimited issues + archive',
+      'AI introduction paragraph (TR + EN)',
+      'LinkedIn promotion card pack',
+      'Reviewer history across issues',
+      'Priority email support',
+    ],
+    cta: 'Start free trial',
+    href: WORKSPACE_HREF,
+    featured: true,
+  },
+  {
+    name: 'Publisher',
+    price: '$129',
+    cadence: '/ month',
+    blurb:
+      'For coordinators running multiple journals or institutional publishers.',
+    features: [
+      'Up to 10 journals',
+      'Multi-user seats with roles',
+      'API + webhooks',
+      'Custom DOI patterns + branding',
+      'SLA-backed support',
+    ],
+    cta: 'Talk to us',
+    href: 'mailto:editor@pedagogicalperspective.com?subject=Issuely%20Publisher%20Plan',
+    featured: false,
+  },
+];
+
+function Pricing() {
+  return (
+    <section id="pricing" className="border-t border-border-soft bg-paper-2">
+      <div className="mx-auto max-w-6xl px-6 py-24 md:py-32">
+        <SectionLabel>Pricing</SectionLabel>
+        <SectionTitle>Pick a plan when you outgrow free.</SectionTitle>
+        <p className="mt-5 max-w-2xl text-[17px] leading-relaxed text-ink-2">
+          Cancel any time. All plans include a 14-day Pro trial. Educational
+          institutions can request a non-profit discount.
+        </p>
+
+        <div className="mt-16 grid gap-6 md:grid-cols-3 md:gap-5">
+          {PRICING.map((tier, i) => (
+            <motion.div
+              key={tier.name}
+              initial={{ opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{
+                duration: 0.5,
+                ease: [0.22, 1, 0.36, 1],
+                delay: i * 0.08,
+              }}
+              className={[
+                'relative rounded-2xl border p-8 flex flex-col',
+                tier.featured
+                  ? 'border-ink bg-paper shadow-[0_8px_30px_-10px_rgba(15,23,42,0.15)] md:-translate-y-2'
+                  : 'border-border bg-paper',
+              ].join(' ')}
+            >
+              {tier.featured && (
+                <div className="absolute -top-3 left-8 inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1 font-mono text-[10px] uppercase tracking-[0.16em] text-paper">
+                  <Sparkle size={11} weight="fill" />
+                  Most popular
+                </div>
+              )}
+
+              <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+                {tier.name}
+              </div>
+              <div className="mt-3 flex items-baseline gap-1.5">
+                <span className="font-display text-5xl font-medium tracking-tight text-ink">
+                  {tier.price}
+                </span>
+                <span className="text-sm text-ink-dim">{tier.cadence}</span>
+              </div>
+              <p className="mt-4 text-[14px] leading-relaxed text-ink-2">
+                {tier.blurb}
+              </p>
+
+              <ul className="mt-7 space-y-3 text-[14px] text-ink-2">
+                {tier.features.map((feat) => (
+                  <li key={feat} className="flex items-start gap-2.5">
+                    <Check
+                      size={16}
+                      weight="bold"
+                      className="mt-0.5 shrink-0 text-gold"
+                    />
+                    <span>{feat}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <a
+                href={tier.href}
+                className={[
+                  'mt-auto pt-8 inline-flex items-center justify-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-medium transition-colors',
+                  tier.featured
+                    ? 'bg-ink text-paper hover:bg-ink/90'
+                    : 'border border-border bg-paper text-ink hover:border-gold hover:text-gold',
+                ].join(' ')}
+                style={tier.featured ? { marginTop: 'auto' } : undefined}
+              >
+                {tier.cta}
+                <ArrowUpRight size={14} weight="bold" />
+              </a>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// =====================================================================
+// FAQ — accordion with AnimatePresence
+// =====================================================================
+
+const FAQS = [
+  {
+    q: 'Does Issuely replace OJS, DergiPark, or our submission system?',
+    a: 'No — Issuely sits beside them. You bring accepted manuscripts from your submission platform, Issuely handles the assembly: frontmatter, DOI deposit XML, cover art, and the things OJS/DergiPark are weak at.',
+  },
+  {
+    q: 'Can I export Crossref XML for DOI registration?',
+    a: 'Yes. We generate Crossref schema 5.3.1 deposit XML for the entire issue — ORCID, page ranges, DOIs, resource URLs, depositor info all auto-filled. Upload it manually to Crossref Direct Deposit or via DergiPark.',
+  },
+  {
+    q: 'What languages are supported?',
+    a: 'The workspace UI is Turkish and English bilingual. Generated outputs (DOCX frontmatter, AI introduction, Crossref XML) handle Turkish locale-aware sorting, Turkish characters, and TR/EN parallel titles natively.',
+  },
+  {
+    q: 'Where is my data stored?',
+    a: 'Currently entirely client-side — your issue data lives in your browser tab and never leaves it. AI generation calls go through a server-side proxy for the Anthropic key but no issue content is logged. Persistent multi-issue storage is on the roadmap (Phase 5).',
+  },
+  {
+    q: 'Is there really a free tier?',
+    a: 'Yes. The Editor plan stays free for one active issue at a time, with DOCX + Crossref XML + cover image. We keep a free tier so smaller journals are never gated out of the basics.',
+  },
+  {
+    q: 'How long does an issue actually take?',
+    a: 'For a typical 15–20 article issue, the assembly work that takes 1–2 days manually is roughly 30–45 minutes in Issuely. Most of the time goes to checking metadata, not formatting.',
+  },
+];
+
+function FaqItem({ item, open, onToggle }) {
+  return (
+    <li className="border-b border-border-soft">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-6 py-5 text-left transition-colors hover:text-ink"
+      >
+        <span className="font-display text-[18px] font-medium leading-snug text-ink">
+          {item.q}
+        </span>
+        <span
+          className={[
+            'shrink-0 flex size-7 items-center justify-center rounded-full border transition-colors',
+            open
+              ? 'border-ink bg-ink text-paper'
+              : 'border-border bg-paper text-ink-2',
+          ].join(' ')}
+        >
+          {open ? (
+            <Minus size={13} weight="bold" />
+          ) : (
+            <Plus size={13} weight="bold" />
+          )}
+        </span>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="content"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{
+              height: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
+              opacity: { duration: 0.22 },
+            }}
+            className="overflow-hidden"
+          >
+            <p className="pb-6 pr-12 text-[15px] leading-relaxed text-ink-2">
+              {item.a}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </li>
+  );
+}
+
+function FAQ() {
+  const [openIdx, setOpenIdx] = useState(0);
+
+  return (
+    <section id="faq" className="border-t border-border-soft bg-paper">
+      <div className="mx-auto max-w-3xl px-6 py-24 md:py-32">
+        <SectionLabel>FAQ</SectionLabel>
+        <SectionTitle>Questions editors actually ask.</SectionTitle>
+
+        <ul className="mt-12 border-t border-border-soft">
+          {FAQS.map((item, i) => (
+            <FaqItem
+              key={item.q}
+              item={item}
+              open={openIdx === i}
+              onToggle={() => setOpenIdx(openIdx === i ? -1 : i)}
+            />
+          ))}
+        </ul>
+
+        <p className="mt-12 text-[14px] text-ink-2">
+          Still wondering?{' '}
+          <a
+            href="mailto:editor@pedagogicalperspective.com"
+            className="text-gold underline decoration-gold/40 underline-offset-4 transition-colors hover:decoration-gold"
+          >
+            editor@pedagogicalperspective.com
+          </a>
         </p>
       </div>
     </section>
   );
 }
 
-// =====================================================
-// Footer — colophon
-// =====================================================
-function Colophon() {
+// =====================================================================
+// Footer
+// =====================================================================
+
+function Footer() {
   return (
-    <footer style={{ background: 'var(--paper)' }}>
-      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '56px 28px 32px', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 48 }} className="ily-foot">
-        <div>
-          <div style={{ fontFamily: SERIF_D, fontWeight: 600, fontSize: 28, color: 'var(--ink)', letterSpacing: -0.7 }}>Issuely</div>
-          <p style={{ fontFamily: SERIF_B, fontStyle: 'italic', fontSize: 14, color: 'var(--ink-3)', marginTop: 12, lineHeight: 1.6, maxWidth: 320 }}>
-            A workshop for academic journal editors. Developed by Doç. Dr. Erhan Yaylak at Ordu Üniversitesi BYDK.
-          </p>
+    <footer className="border-t border-border-soft bg-paper-2">
+      <div className="mx-auto max-w-6xl px-6 py-16">
+        <div className="grid gap-10 md:grid-cols-[2fr_1fr_1fr_1fr]">
+          <div>
+            <div className="flex items-baseline gap-2">
+              <span className="font-display text-2xl font-semibold italic tracking-tight text-gold">
+                Issuely
+              </span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">
+                Issue Workspace
+              </span>
+            </div>
+            <p className="mt-4 max-w-sm text-[14px] leading-relaxed text-ink-2">
+              Built by an editor, for editors. From accepted manuscripts to a
+              peer-reviewed issue ready for indexing — in one place.
+            </p>
+          </div>
+
+          <FooterColumn
+            title="Product"
+            links={[
+              { href: '#features', label: 'Features' },
+              { href: '#pricing', label: 'Pricing' },
+              { href: '#faq', label: 'FAQ' },
+              { href: WORKSPACE_HREF, label: 'Open Workspace' },
+            ]}
+          />
+          <FooterColumn
+            title="Resources"
+            links={[
+              { href: 'https://www.crossref.org/02publishers/parser.html', label: 'Crossref XML parser', external: true },
+              { href: 'https://docs.claude.com', label: 'AI Documentation', external: true },
+              { href: 'https://github.com/pedagogicalperspective/issuely', label: 'GitHub', external: true },
+            ]}
+          />
+          <FooterColumn
+            title="Contact"
+            links={[
+              { href: 'mailto:editor@pedagogicalperspective.com', label: 'Email' },
+              { href: 'https://www.pedagogicalperspective.com', label: 'Pedagogical Perspective', external: true },
+            ]}
+          />
         </div>
-        <FootCol title="Product" links={[
-          ['Modules', '#modules'],
-          ['Workflow', '#workflow'],
-          ['Pricing', '#pricing'],
-          ['Editor', '#/app'],
-        ]} />
-        <FootCol title="References" links={[
-          ['Crossref schema', 'https://www.crossref.org/documentation/schema-library/'],
-          ['ORCID v3', 'https://info.orcid.org/'],
-          ['Open access policy', '#'],
-          ['Roadmap', '#'],
-        ]} />
-        <FootCol title="Correspondence" links={[
-          ['hello@issuely.com', 'mailto:hello@issuely.com'],
-          ['Help', '#'],
-          ['Privacy', '#'],
-          ['Imprint', '#'],
-        ]} />
-      </div>
-      <div style={{ maxWidth: 1180, margin: '40px auto 0', padding: '0 28px 32px' }}>
-        <div style={{ borderTop: '1px solid var(--rule)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 12 }}>
-          <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--ink-4)', textTransform: 'uppercase' }}>
-            © 2026 Issuely · Crossref deposit & DOCX export, in active use since Vol. 5
-          </span>
-          <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--ink-4)', textTransform: 'uppercase' }}>
-            v0.5 · Build {new Date().getFullYear()}.{String(new Date().getMonth() + 1).padStart(2, '0')}
-          </span>
+
+        <div className="mt-14 flex flex-col items-start justify-between gap-3 border-t border-border-soft pt-6 text-[12px] text-ink-dim sm:flex-row sm:items-center">
+          <div>
+            © {new Date().getFullYear()} Issuely · Erhan Yaylak. Educational
+            research, served plainly.
+          </div>
+          <div className="flex items-center gap-4">
+            <a
+              href="https://github.com/pedagogicalperspective/issuely"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 transition-colors hover:text-ink"
+            >
+              <GithubLogo size={14} weight="regular" />
+              GitHub
+            </a>
+          </div>
         </div>
       </div>
     </footer>
   );
 }
-function FootCol({ title, links }) {
+
+function FooterColumn({ title, links }) {
   return (
     <div>
-      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--ink-3)', textTransform: 'uppercase', marginBottom: 16 }}>{title}</div>
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {links.map(([l, h], i) => (
-          <li key={i}>
-            <a href={h} onClick={h === '#/app' ? openApp : undefined} className="ily-link" style={{
-              fontFamily: SERIF_B, fontSize: 14, color: 'var(--ink-2)', textDecoration: 'none',
-            }}>{l}</a>
+      <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+        {title}
+      </div>
+      <ul className="mt-4 space-y-2.5">
+        {links.map((l) => (
+          <li key={l.href}>
+            <a
+              href={l.href}
+              target={l.external ? '_blank' : undefined}
+              rel={l.external ? 'noreferrer' : undefined}
+              className="inline-flex items-center gap-1 text-[14px] text-ink-2 transition-colors hover:text-ink"
+            >
+              {l.label}
+              {l.external && (
+                <ArrowUpRight size={11} weight="bold" className="opacity-50" />
+              )}
+            </a>
           </li>
         ))}
       </ul>
@@ -603,80 +668,41 @@ function FootCol({ title, links }) {
   );
 }
 
-// =====================================================
-// Section head — reused across sections
-// =====================================================
-function SectionHead({ kicker, romanIdx, title, subtitle }) {
+// =====================================================================
+// Section primitives
+// =====================================================================
+
+function SectionLabel({ children }) {
   return (
-    <header style={{ display: 'grid', gridTemplateColumns: romanIdx ? '120px 1fr' : '1fr', gap: 32, alignItems: 'baseline' }}>
-      {romanIdx && (
-        <div style={{
-          fontFamily: SERIF_D, fontStyle: 'italic', fontSize: 88, fontWeight: 500,
-          color: 'var(--gold-deep)', letterSpacing: -2, lineHeight: 0.9,
-        }}>{romanIdx}</div>
-      )}
-      <div>
-        {kicker && (
-          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.18em', color: 'var(--gold-deep)', textTransform: 'uppercase', marginBottom: 14 }}>
-            {kicker}
-          </div>
-        )}
-        <h2 style={{ fontFamily: SERIF_D, fontSize: 56, fontWeight: 500, letterSpacing: -1.4, margin: 0, color: 'var(--ink)', lineHeight: 1.02, maxWidth: 880 }}>
-          {title}
-        </h2>
-        {subtitle && (
-          <p style={{ fontFamily: SERIF_B, fontStyle: 'italic', fontSize: 19, color: 'var(--ink-2)', marginTop: 18, lineHeight: 1.55, maxWidth: 680 }}>
-            {subtitle}
-          </p>
-        )}
-      </div>
-    </header>
+    <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-gold">
+      {children}
+    </div>
   );
 }
 
-// =====================================================
-// Responsive CSS
-// =====================================================
-const ResponsiveCSS = () => (
-  <style>{`
-    @media (max-width: 960px) {
-      .ily-hero { grid-template-columns: 1fr !important; gap: 56px !important; padding: 64px 24px !important; }
-      .ily-hero h1 { font-size: 56px !important; }
-      .ily-mod-row { grid-template-columns: 64px 1fr !important; gap: 20px !important; }
-      .ily-mod-row > :last-child { grid-column: 1 / -1; padding-left: 64px; }
-      .ily-foot { grid-template-columns: 1fr 1fr !important; }
-      .ily-nav a:not(:last-child) { display: none; }
-    }
-  `}</style>
-);
-
-// =====================================================
-// Root
-// =====================================================
-export default function Landing() {
-  useEffect(() => {
-    if (!document.querySelector(`link[href="${FONTS_HREF}"]`)) {
-      const l = document.createElement('link');
-      l.rel = 'stylesheet';
-      l.href = FONTS_HREF;
-      document.head.appendChild(l);
-    }
-    document.title = 'Issuely — A workshop for the journal issue';
-  }, []);
-
+function SectionTitle({ children }) {
   return (
-    <div style={{ background: 'var(--paper)', color: 'var(--ink)', minHeight: '100vh', fontFamily: SERIF_B }}>
-      <style>{ROOT_STYLES}</style>
-      <ResponsiveCSS />
-      <Masthead />
-      <Hero />
-      <EditorialNote />
-      <Modules />
-      <Workflow />
-      <Pricing />
-      <Questions />
-      <ClosingNote />
-      <Colophon />
+    <h2 className="mt-4 font-display text-4xl font-medium leading-[1.1] tracking-[-0.02em] text-ink md:text-5xl">
+      {children}
+    </h2>
+  );
+}
+
+// =====================================================================
+// Page
+// =====================================================================
+
+export default function Landing() {
+  return (
+    <div className="min-h-screen bg-paper text-ink">
+      <Navbar />
+      <main>
+        <Hero />
+        <Features />
+        <Pricing />
+        <FAQ />
+      </main>
+      <Footer />
     </div>
   );
 }
