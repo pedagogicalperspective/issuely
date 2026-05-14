@@ -1,11 +1,37 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import {
-  GripVertical, Plus, Settings, ChevronDown, ChevronRight,
-  Trash2, BookOpen, FileText, FileCode2, Image as ImageIcon, Send, Hash,
-  Users, Tag, Archive, Award, Database, Layout,
-  ScrollText, UserCheck, Globe, Mail, MapPin, Calendar,
-  Sparkles, Search, Command as CommandIcon, Loader2, X, Check, Download
-} from 'lucide-react';
+  DotsSixVertical as GripVertical,
+  Plus,
+  Gear as Settings,
+  CaretDown as ChevronDown,
+  CaretRight as ChevronRight,
+  Trash as Trash2,
+  BookOpen,
+  FileText,
+  FileCode as FileCode2,
+  Image as ImageIcon,
+  PaperPlaneTilt as Send,
+  Hash,
+  Users,
+  Tag,
+  Archive,
+  Trophy as Award,
+  Database,
+  SquaresFour as Layout,
+  Scroll as ScrollText,
+  UserCircle as UserCheck,
+  Globe,
+  Envelope as Mail,
+  MapPin,
+  Calendar,
+  Sparkle as Sparkles,
+  MagnifyingGlass as Search,
+  Command as CommandIcon,
+  CircleNotch as Loader2,
+  X,
+  Check,
+  Download
+} from '@phosphor-icons/react';
 import { Toaster, toast } from 'sonner';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
@@ -685,7 +711,7 @@ const CoverSection = ({ cover, setCover, issue, setIssue, journal, onGenerateInt
           borderRadius: 4,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-            <Sparkles size={16} color={PALETTE.gold} strokeWidth={1.6} />
+            <Sparkles size={16} color={PALETTE.gold} weight="regular" />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 12, color: PALETTE.text, fontFamily: 'DM Sans', fontWeight: 600 }}>
                 Sayı tanıtım paragrafı taslağı
@@ -951,7 +977,7 @@ const ReviewersSection = ({ reviewers, setReviewers }) => {
         borderRadius: 4, fontSize: 11, color: PALETTE.textMuted, fontFamily: 'DM Sans',
         display: 'flex', alignItems: 'center', gap: 10,
       }}>
-        <Award size={14} color={PALETTE.gold} strokeWidth={1.6} />
+        <Award size={14} color={PALETTE.gold} weight="regular" />
         <span>Bu liste frontmatter DOCX'te <em>"Bu Sayının Hakemleri / Reviewers of This Issue"</em> başlığı altında basılacak.</span>
       </div>
     </>
@@ -1083,7 +1109,7 @@ const ArticleRow = ({ article, index, onUpdate, onDelete, doiString }) => {
     <div ref={setNodeRef} style={style}>
       <div style={{ display: 'flex', alignItems: 'flex-start', padding: '14px 16px', gap: 12 }}>
         <div {...attributes} {...listeners} style={{ cursor: 'grab', color: PALETTE.textMuted, paddingTop: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, touchAction: 'none' }}>
-          <GripVertical size={16} strokeWidth={1.5} />
+          <GripVertical size={16} weight="light" />
           <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: PALETTE.gold, fontWeight: 500 }}>{padNumber(index + 1)}</div>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -1102,7 +1128,7 @@ const ArticleRow = ({ article, index, onUpdate, onDelete, doiString }) => {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: PALETTE.textDim, fontFamily: 'DM Sans' }}>
-            <Users size={12} strokeWidth={1.6} />
+            <Users size={12} weight="regular" />
             <span>{article.authors.map(a => `${a.first} ${a.last}`).join(', ')}</span>
           </div>
           {expanded && (
@@ -1134,7 +1160,7 @@ const ArticleRow = ({ article, index, onUpdate, onDelete, doiString }) => {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {article.keywords.map((kw, i) => (
                     <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', fontSize: 11, background: PALETTE.surfaceAlt, border: `1px solid ${PALETTE.border}`, color: PALETTE.textDim, borderRadius: 3, fontFamily: 'DM Sans' }}>
-                      <Tag size={10} strokeWidth={1.6} /> {kw}
+                      <Tag size={10} weight="regular" /> {kw}
                     </span>
                   ))}
                 </div>
@@ -1289,7 +1315,7 @@ const Sidebar = ({ activeSection, setActiveSection, journal, issue, totalArticle
                 <span style={{ fontFamily: 'Fraunces, serif', fontSize: 11, fontStyle: 'italic', color: active ? PALETTE.gold : PALETTE.textMuted, minWidth: 16, textAlign: 'center' }}>
                   {s.romanIdx}
                 </span>
-                <Icon size={14} strokeWidth={1.6} />
+                <Icon size={14} weight="regular" />
                 <span style={{ flex: 1, fontWeight: active ? 600 : 400 }}>{s.label}</span>
                 {cnt !== null && cnt !== undefined && (
                   <span style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: PALETTE.textMuted }}>{cnt}</span>
@@ -1327,7 +1353,7 @@ const Sidebar = ({ activeSection, setActiveSection, journal, issue, totalArticle
               }}
               onMouseEnter={e => { if (o.active && !o.busy) { e.currentTarget.style.background = PALETTE.goldGlow; e.currentTarget.style.borderColor = PALETTE.goldDim; } }}
               onMouseLeave={e => { if (o.active && !o.busy) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = PALETTE.border; } }}>
-              <o.icon size={14} strokeWidth={1.5} color={o.active ? (o.busy ? PALETTE.textDim : PALETTE.gold) : PALETTE.textMuted} />
+              <o.icon size={14} weight="light" color={o.active ? (o.busy ? PALETTE.textDim : PALETTE.gold) : PALETTE.textMuted} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, color: o.active ? PALETTE.text : PALETTE.textMuted }}>{o.label}</div>
                 <div style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 11, color: PALETTE.textMuted, marginTop: 1 }}>
@@ -1928,7 +1954,7 @@ ${reviewersHtml}
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: PALETTE.bg, color: PALETTE.text, fontFamily: 'DM Sans, sans-serif' }}>
+    <div style={{ minHeight: '100dvh', background: PALETTE.bg, color: PALETTE.text, fontFamily: 'DM Sans, sans-serif' }}>
       <style>{GLOBAL_CSS}</style>
       <Toaster
         position="bottom-right"
@@ -1995,7 +2021,7 @@ ${reviewersHtml}
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = PALETTE.ink; e.currentTarget.style.color = PALETTE.ink; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = PALETTE.border; e.currentTarget.style.color = PALETTE.textDim; }}>
-            <Search size={13} strokeWidth={1.6} /> Komut paleti
+            <Search size={13} weight="regular" /> Komut paleti
             <kbd style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: PALETTE.textMuted, padding: '1px 5px', background: PALETTE.surfaceAlt, borderRadius: 3, marginLeft: 2 }}>⌘K</kbd>
           </button>
           <button style={{
@@ -2004,12 +2030,12 @@ ${reviewersHtml}
             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
             fontSize: 12, fontFamily: 'DM Sans', fontWeight: 500,
           }}>
-            <Settings size={13} strokeWidth={1.6} /> Dergi Ayarları
+            <Settings size={13} weight="regular" /> Dergi Ayarları
           </button>
         </div>
       </header>
 
-      <div style={{ display: 'flex', minHeight: 'calc(100vh - 72px)' }}>
+      <div style={{ display: 'flex', minHeight: 'calc(100dvh - 72px)' }}>
         <Sidebar
           activeSection={activeSection} setActiveSection={setActiveSection}
           journal={journal} issue={issue}

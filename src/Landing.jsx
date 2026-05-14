@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ArrowUpRight, Plus, Minus } from 'lucide-react';
+import { ArrowUpRight, Plus, Minus } from '@phosphor-icons/react';
 
-const FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500;1,9..144,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap';
+const FONTS_HREF = 'https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap';
 
-const SERIF_D = 'Fraunces, "Times New Roman", Georgia, serif';
+// Display: EB Garamond, a Robert Slimbach revival of Claude Garamont's 16c
+// types. University-press credible, not on the "tasteful SaaS Fraunces" lane.
+const SERIF_D = '"EB Garamond", "Adobe Garamond Pro", "Garamond", Georgia, serif';
 const SERIF_B = '"Source Serif 4", "Source Serif Pro", Georgia, serif';
 const SANS = '"DM Sans", system-ui, -apple-system, sans-serif';
 const MONO = '"JetBrains Mono", ui-monospace, monospace';
@@ -87,14 +89,14 @@ function Hero() {
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: '96px 28px 88px', display: 'grid', gridTemplateColumns: '1.05fr .95fr', gap: 72, alignItems: 'start' }} className="ily-hero">
         {/* Left: editorial title */}
         <div>
-          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 0.18 + 'em', color: 'var(--gold-deep)', textTransform: 'uppercase', marginBottom: 28 }}>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.18em', color: 'var(--gold-deep)', textTransform: 'uppercase', marginBottom: 28 }}>
             Volume 0 · Issue 5 · Beta
           </div>
 
           <h1 style={{ fontFamily: SERIF_D, fontSize: 84, lineHeight: 0.96, fontWeight: 500, letterSpacing: -2.2, margin: 0, color: 'var(--ink)' }}>
             A workshop for<br />
             assembling the<br />
-            <em style={{ fontStyle: 'italic', fontWeight: 500, color: 'var(--gold-deep)' }}>journal issue.</em>
+            <em style={{ fontStyle: 'italic', fontWeight: 500, color: 'var(--gold-deep)' }}>journal issue</em>.
           </h1>
 
           <p style={{ fontFamily: SERIF_B, fontSize: 19, lineHeight: 1.6, color: 'var(--ink-2)', marginTop: 36, maxWidth: 520 }}>
@@ -133,7 +135,7 @@ function Hero() {
           <span style={{ fontFamily: SERIF_B, fontStyle: 'italic', fontSize: 13, color: 'var(--ink-3)' }}>
             In active use by <span style={{ color: 'var(--ink-2)' }}>Pedagogical Perspective</span>, an open-access journal of educational research.
           </span>
-          <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.14 + 'em', color: 'var(--ink-4)', textTransform: 'uppercase' }}>
+          <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--ink-4)', textTransform: 'uppercase' }}>
             eISSN 2822-4841 · DOI prefix 10.29329
           </span>
         </div>
@@ -159,7 +161,7 @@ function TocArtifact() {
         padding: '36px 36px 28px',
       }}>
         <div style={{ borderBottom: '1px solid var(--rule)', paddingBottom: 16 }}>
-          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.18 + 'em', color: 'var(--gold-deep)', textTransform: 'uppercase' }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: 'var(--gold-deep)', textTransform: 'uppercase' }}>
             Volume 5 · Issue 1 · Spring 2026
           </div>
           <div style={{ fontFamily: SERIF_D, fontSize: 22, fontWeight: 600, color: 'var(--ink)', marginTop: 8, letterSpacing: -0.4 }}>
@@ -196,7 +198,7 @@ function EditorialNote() {
   return (
     <section style={{ background: 'var(--paper-2)', borderBottom: '1px solid var(--rule)' }}>
       <div style={{ maxWidth: 880, margin: '0 auto', padding: '64px 28px' }}>
-        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 0.18 + 'em', color: 'var(--gold-deep)', textTransform: 'uppercase' }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.18em', color: 'var(--gold-deep)', textTransform: 'uppercase' }}>
           Editor's note
         </div>
         <p style={{ fontFamily: SERIF_B, fontSize: 22, lineHeight: 1.5, color: 'var(--ink)', marginTop: 16, fontWeight: 400 }}>
@@ -216,42 +218,42 @@ function EditorialNote() {
 function Modules() {
   const items = [
     {
-      r: 'I',
+      r: '1',
       title: 'Frontmatter, all of it.',
       lede: 'Cover, masthead, editorial board, section editors, indexing, reviewers, table of contents.',
       body: 'Six modules in one workspace. Each carries its own format conventions — ORCID under board members, ROR under publisher, season-name under volume. Nothing is left to be assembled by hand on the morning of the deposit.',
       tag: 'Standards: ORCID v3 · ROR · ISSN',
     },
     {
-      r: 'II',
+      r: '2',
       title: 'Crossref deposit, one click.',
       lede: 'A complete Crossref 5.3.1 XML for every article in the issue, with batch identifier and timestamp.',
       body: 'Multiple authors with affiliations, ORCID identifiers, normalized publish dates, DOI segments — assembled into one deposit ready to upload. No more hand-editing XML in a text editor at midnight.',
       tag: 'Schema: Crossref 5.3.1 deposit',
     },
     {
-      r: 'III',
+      r: '3',
       title: 'DOI and pagination, automatic.',
       lede: 'Write the DOI pattern once. Pages and identifiers recompute every time the issue is reordered.',
       body: 'A pattern like 10.29329/pedper.{year}.{volume}.{issue}.{number} resolves automatically. Drag an article up or down: page-start, page-end, and DOI segment update for every article that moves with it.',
       tag: 'Sequenced: Pages, DOI, both',
     },
     {
-      r: 'IV',
+      r: '4',
       title: 'Issue introduction, drafted.',
       lede: 'Claude Sonnet drafts the editor\'s opening paragraph, in Turkish and in English, in parallel.',
       body: 'Provide the thematic focus. Issuely composes two short paragraphs in the voice of an editor-in-chief — substantive framing, not "we are excited to present." Editable, attributable, optional.',
       tag: 'Engine: Anthropic Claude Sonnet 4.6',
     },
     {
-      r: 'V',
+      r: '5',
       title: 'Reorder by hand.',
       lede: 'Drag-and-drop sequencing, keyboard-accessible, with live recalculation.',
       body: 'No drag-handle to chase across the screen. Pick up any article with the keyboard or pointer; the sequence and its derived numbers reflect immediately. ⌘K opens a palette to jump to any module without lifting hands.',
       tag: 'Built on @dnd-kit · WCAG AA',
     },
     {
-      r: 'VI',
+      r: '6',
       title: 'Word, on demand.',
       lede: 'Print-ready DOCX of the frontmatter, formatted in the typesetting house\'s vocabulary.',
       body: 'Cover, masthead table, editorial board with grouped sections, indexing keywords, reviewer roll, table of contents. The file opens in Word as a finished document, not a draft to clean up.',
@@ -263,9 +265,9 @@ function Modules() {
     <section id="modules" style={{ borderBottom: '1px solid var(--rule)' }}>
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: '112px 28px 96px' }}>
         <SectionHead
-          kicker="Six modules"
+          romanIdx="I"
           title={<>What an issue <em style={{ fontStyle: 'italic', color: 'var(--gold-deep)' }}>actually</em> needs.</>}
-          subtitle="Each one earns its place in the sidebar. Each one writes back to the deposit."
+          subtitle="Each one earns its place in the sidebar, and each one writes back to the deposit."
         />
         <div style={{ marginTop: 64 }}>
           {items.map((it, i) => (
@@ -286,7 +288,7 @@ function Modules() {
                 <p style={{ fontFamily: SERIF_B, fontSize: 16, fontStyle: 'italic', color: 'var(--ink-2)', marginTop: 12, lineHeight: 1.55, maxWidth: 480 }}>
                   {it.lede}
                 </p>
-                <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.14 + 'em', color: 'var(--gold-deep)', textTransform: 'uppercase', marginTop: 18 }}>
+                <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--gold-deep)', textTransform: 'uppercase', marginTop: 18 }}>
                   {it.tag}
                 </div>
               </div>
@@ -306,17 +308,17 @@ function Modules() {
 // =====================================================
 function Workflow() {
   const steps = [
-    { r: 'I',   t: 'Set the journal',         d: 'Title, eISSN, DOI prefix, frequency, license, peer-review model. Written once; reused on every issue.' },
-    { r: 'II',  t: 'Upload the articles',     d: 'Drop or paste the list. Authors, ORCID, page counts, type. Drag to sequence. Page ranges and DOI segments follow.' },
-    { r: 'III', t: 'Compose the masthead',    d: 'Editor-in-chief, associate editors, section editors, board, international advisory, reviewers. ORCID and affiliations included.' },
-    { r: 'IV',  t: 'Draft the editor\'s note',d: 'Provide a thematic focus. Issuely drafts the bilingual opening paragraph in the editor-in-chief voice. Read, revise, approve.' },
-    { r: 'V',   t: 'Export and deposit',      d: 'Frontmatter DOCX into the typesetter\'s workflow. Crossref XML into the deposit form. Done in one afternoon, not one weekend.' },
+    { r: '1', t: 'Set the journal',         d: 'Title, eISSN, DOI prefix, frequency, license, peer-review model. Written once, reused on every issue.' },
+    { r: '2', t: 'Upload the articles',     d: 'Drop or paste the list. Authors, ORCID, page counts, type. Drag to sequence. Page ranges and DOI segments follow.' },
+    { r: '3', t: 'Compose the masthead',    d: 'Editor-in-chief, associate editors, section editors, board, international advisory, reviewers. ORCID and affiliations included.' },
+    { r: '4', t: 'Draft the editor\'s note',d: 'Provide a thematic focus. Issuely drafts the bilingual opening paragraph in the editor-in-chief voice. Read, revise, approve.' },
+    { r: '5', t: 'Export and deposit',      d: 'Frontmatter DOCX into the typesetter\'s workflow. Crossref XML into the deposit form. Done in one afternoon, not one weekend.' },
   ];
   return (
     <section id="workflow" style={{ background: 'var(--paper-2)', borderBottom: '1px solid var(--rule)' }}>
       <div style={{ maxWidth: 880, margin: '0 auto', padding: '128px 28px 112px' }}>
         <SectionHead
-          kicker="Workflow"
+          romanIdx="II"
           title="From rough roster to deposited issue, in five passes."
           subtitle="The order of operations of a typesetting house, rendered to a single workspace."
         />
@@ -368,9 +370,9 @@ function Pricing() {
     <section id="pricing" style={{ borderBottom: '1px solid var(--rule)' }}>
       <div style={{ maxWidth: 1080, margin: '0 auto', padding: '112px 28px 112px' }}>
         <SectionHead
-          kicker="Pricing"
-          title="Three tiers. One published rate sheet."
-          subtitle="No quote forms for the editor tier. Sustained pricing, not promotional."
+          romanIdx="III"
+          title="Three tiers, one published rate sheet."
+          subtitle="No quote forms for the editor tier, no promotional pricing that becomes another rate next quarter."
         />
         <div style={{ marginTop: 56, overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
@@ -381,15 +383,15 @@ function Pricing() {
                 </th>
                 <th style={{ ...headerCellBase, fontSize: 22, textAlign: 'left' }}>
                   Editor
-                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.14 + 'em', color: 'var(--ink-3)', marginTop: 4 }}>Free · forever</div>
+                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--ink-3)', marginTop: 4 }}>Free · forever</div>
                 </th>
                 <th style={{ ...headerCellBase, fontSize: 22, textAlign: 'left', background: 'var(--gold-soft)', borderBottom: '1px solid var(--gold-deep)' }}>
                   Publisher
-                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.14 + 'em', color: 'var(--gold-deep)', marginTop: 4 }}>₺299 / month</div>
+                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--gold-deep)', marginTop: 4 }}>₺299 / month</div>
                 </th>
                 <th style={{ ...headerCellBase, fontSize: 22, textAlign: 'left' }}>
                   Institution
-                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.14 + 'em', color: 'var(--ink-3)', marginTop: 4 }}>By arrangement</div>
+                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--ink-3)', marginTop: 4 }}>By arrangement</div>
                 </th>
               </tr>
             </thead>
@@ -470,7 +472,7 @@ function Questions() {
     <section id="questions" style={{ background: 'var(--paper-2)', borderBottom: '1px solid var(--rule)' }}>
       <div style={{ maxWidth: 880, margin: '0 auto', padding: '96px 28px' }}>
         <SectionHead
-          kicker="Questions"
+          romanIdx="IV"
           title="Read before you write."
         />
         <div style={{ marginTop: 56 }}>
@@ -511,13 +513,10 @@ function QItem({ q, a }) {
 function ClosingNote() {
   return (
     <section style={{ borderBottom: '1px solid var(--rule)' }}>
-      <div style={{ maxWidth: 880, margin: '0 auto', padding: '112px 28px' }}>
-        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 0.18 + 'em', color: 'var(--gold-deep)', textTransform: 'uppercase' }}>
-          The next issue
-        </div>
-        <p style={{ fontFamily: SERIF_D, fontSize: 44, lineHeight: 1.15, fontWeight: 500, color: 'var(--ink)', letterSpacing: -1, marginTop: 18 }}>
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: '96px 28px' }}>
+        <p style={{ fontFamily: SERIF_B, fontSize: 22, lineHeight: 1.65, color: 'var(--ink-2)', margin: 0 }}>
           The frontmatter waits for no one, but Issuely is patient with the editor. The editor opens
-          a new issue, populates the modules, exports the deposit. <a href="#/app" onClick={openApp} className="ily-link" style={{ color: 'var(--gold-deep)', textDecoration: 'underline', textUnderlineOffset: 6, textDecorationThickness: 1.5 }}>Begin a workspace</a>, no card required.
+          a new issue, populates the modules, exports the deposit. <a href="#/app" onClick={openApp} className="ily-link" style={{ color: 'var(--gold-deep)', textDecoration: 'underline', textUnderlineOffset: 4, textDecorationThickness: 1 }}>Begin a workspace</a>, no card required.
         </p>
       </div>
     </section>
@@ -558,10 +557,10 @@ function Colophon() {
       </div>
       <div style={{ maxWidth: 1180, margin: '40px auto 0', padding: '0 28px 32px' }}>
         <div style={{ borderTop: '1px solid var(--rule)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 12 }}>
-          <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.14 + 'em', color: 'var(--ink-4)', textTransform: 'uppercase' }}>
+          <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--ink-4)', textTransform: 'uppercase' }}>
             © 2026 Issuely · Crossref deposit & DOCX export, in active use since Vol. 5
           </span>
-          <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.14 + 'em', color: 'var(--ink-4)', textTransform: 'uppercase' }}>
+          <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--ink-4)', textTransform: 'uppercase' }}>
             v0.5 · Build {new Date().getFullYear()}.{String(new Date().getMonth() + 1).padStart(2, '0')}
           </span>
         </div>
@@ -572,7 +571,7 @@ function Colophon() {
 function FootCol({ title, links }) {
   return (
     <div>
-      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.14 + 'em', color: 'var(--ink-3)', textTransform: 'uppercase', marginBottom: 16 }}>{title}</div>
+      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--ink-3)', textTransform: 'uppercase', marginBottom: 16 }}>{title}</div>
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {links.map(([l, h], i) => (
           <li key={i}>
@@ -589,20 +588,30 @@ function FootCol({ title, links }) {
 // =====================================================
 // Section head — reused across sections
 // =====================================================
-function SectionHead({ kicker, title, subtitle }) {
+function SectionHead({ kicker, romanIdx, title, subtitle }) {
   return (
-    <header>
-      <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 0.18 + 'em', color: 'var(--gold-deep)', textTransform: 'uppercase' }}>
-        {kicker}
-      </div>
-      <h2 style={{ fontFamily: SERIF_D, fontSize: 56, fontWeight: 500, letterSpacing: -1.4, margin: '14px 0 0', color: 'var(--ink)', lineHeight: 1.02, maxWidth: 880 }}>
-        {title}
-      </h2>
-      {subtitle && (
-        <p style={{ fontFamily: SERIF_B, fontStyle: 'italic', fontSize: 19, color: 'var(--ink-2)', marginTop: 18, lineHeight: 1.55, maxWidth: 680 }}>
-          {subtitle}
-        </p>
+    <header style={{ display: 'grid', gridTemplateColumns: romanIdx ? '120px 1fr' : '1fr', gap: 32, alignItems: 'baseline' }}>
+      {romanIdx && (
+        <div style={{
+          fontFamily: SERIF_D, fontStyle: 'italic', fontSize: 88, fontWeight: 500,
+          color: 'var(--gold-deep)', letterSpacing: -2, lineHeight: 0.9,
+        }}>{romanIdx}</div>
       )}
+      <div>
+        {kicker && (
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.18em', color: 'var(--gold-deep)', textTransform: 'uppercase', marginBottom: 14 }}>
+            {kicker}
+          </div>
+        )}
+        <h2 style={{ fontFamily: SERIF_D, fontSize: 56, fontWeight: 500, letterSpacing: -1.4, margin: 0, color: 'var(--ink)', lineHeight: 1.02, maxWidth: 880 }}>
+          {title}
+        </h2>
+        {subtitle && (
+          <p style={{ fontFamily: SERIF_B, fontStyle: 'italic', fontSize: 19, color: 'var(--ink-2)', marginTop: 18, lineHeight: 1.55, maxWidth: 680 }}>
+            {subtitle}
+          </p>
+        )}
+      </div>
     </header>
   );
 }
