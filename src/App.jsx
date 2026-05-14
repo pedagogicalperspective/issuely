@@ -25,30 +25,75 @@ import { Command } from 'cmdk';
 // =====================================================
 
 // Light theme — Pedapub-inspired clinical academic surface.
+// Neutrals subtly tinted toward navy (per DESIGN.md: never pure white/black).
 // Cover preview + TOC kâğıt önizlemeleri kendi koyu/krem palette'lerini
 // hardcoded taşır (gerçek çıktı objesini simüle ettikleri için).
 const PALETTE = {
-  bg: '#FFFFFF',          // page background — pure white
-  surface: '#FAFBFC',     // cards, sidebar
-  surfaceAlt: '#F1F4F8',  // hover, active cells
-  border: '#E2E5EB',      // separators, input borders
-  borderSoft: '#EDF0F4',  // subtler dividers, row separators
+  bg: '#FCFCFD',          // page background — tinted near-white
+  surface: '#F7F8FA',     // cards, sidebar
+  surfaceAlt: '#EEF0F4',  // hover, active cells
+  border: '#DDE1E8',      // separators, input borders
+  borderSoft: '#E8EBF0',  // subtler dividers, row separators
 
   text: '#1A1F2E',        // primary ink — near-black with navy undertone
+  ink: '#1A1F2E',         // alias of text — for explicit "press"/"button bg" usage
   textDim: '#475569',     // secondary — slate-600
-  textMuted: '#94A3B8',   // captions, placeholders — slate-400
+  textMuted: '#8893A6',   // captions, placeholders
 
-  gold: '#A47929',        // deep gold — readable on white (#D4A84A only worked on dark)
+  gold: '#A47929',        // deep gold — readable on white
   goldDim: '#6E531C',     // even deeper for borders/labels
-  goldGlow: 'rgba(164, 121, 41, 0.08)',  // accent surface tint
+  goldGlow: 'rgba(164, 121, 41, 0.07)',  // accent surface tint
 
-  paper: '#F4EFE3',       // CREAM — used ONLY for TOC preview bg and cover-preview "cover paper" text
-  coverInk: '#F4EFE3',    // text color INSIDE the dark cover preview (paper-on-navy)
+  paper: '#F4EFE3',       // CREAM — used ONLY for TOC preview bg and cover-preview
+  coverInk: '#F4EFE3',    // text color INSIDE the dark cover preview
 
-  success: '#16A34A',
-  danger: '#DC2626',
-  purple: '#6366F1',
+  success: '#15803D',
+  danger: '#B91C1C',
+  purple: '#4F46E5',
 };
+
+// Global CSS injected at App root — focus rings, reduced motion, shimmer keyframes
+const GLOBAL_CSS = `
+  :focus { outline: none; }
+  :focus-visible {
+    outline: 2px solid ${'#A47929'};
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+  button:focus-visible, a:focus-visible, [role="button"]:focus-visible,
+  input:focus-visible, textarea:focus-visible, select:focus-visible {
+    outline: 2px solid ${'#A47929'};
+    outline-offset: 1px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+  @keyframes ily-shimmer {
+    0%   { background-position: -480px 0; }
+    100% { background-position: 480px 0; }
+  }
+  @keyframes ily-spin {
+    to { transform: rotate(360deg); }
+  }
+  .ily-skel {
+    background: linear-gradient(90deg,
+      #EEF0F4 0%,
+      #F7F8FA 50%,
+      #EEF0F4 100%);
+    background-size: 960px 100%;
+    animation: ily-shimmer 1.6s ease-in-out infinite;
+    border-radius: 4px;
+  }
+  [cmdk-item][data-selected="true"] {
+    background: rgba(164, 121, 41, 0.10);
+    color: ${'#A47929'};
+  }
+  [cmdk-item] { transition: background .08s ease-out; }
+`;
 
 const FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap';
 
@@ -634,54 +679,80 @@ const CoverSection = ({ cover, setCover, issue, setIssue, journal, onGenerateInt
         {/* AI intro generator */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '12px 14px',
-          background: `linear-gradient(135deg, ${PALETTE.surfaceAlt} 0%, ${PALETTE.surface} 100%)`,
+          padding: '14px 16px',
+          background: PALETTE.goldGlow,
           border: `1px solid ${PALETTE.goldDim}`,
-          borderRadius: 6,
+          borderRadius: 4,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
             <Sparkles size={16} color={PALETTE.gold} strokeWidth={1.6} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, color: PALETTE.text, fontFamily: 'DM Sans', fontWeight: 500 }}>
-                AI ile tanıtım paragrafı taslağı üret
+              <div style={{ fontSize: 12, color: PALETTE.text, fontFamily: 'DM Sans', fontWeight: 600 }}>
+                Sayı tanıtım paragrafı taslağı
               </div>
-              <div style={{ fontSize: 10, color: PALETTE.textMuted, fontFamily: 'DM Sans', marginTop: 2 }}>
-                Makale başlık ve anahtar kelimelerinden TR + EN draft oluşturur
+              <div style={{ fontSize: 11, color: PALETTE.textDim, fontFamily: 'DM Sans', marginTop: 3, fontStyle: 'italic' }}>
+                Tematik odak + makale başlıklarından TR + EN draft. Claude Sonnet 4.6.
               </div>
             </div>
           </div>
           <button onClick={onGenerateIntro} disabled={introGenerating}
             style={{
-              padding: '7px 14px', borderRadius: 4,
-              background: introGenerating ? PALETTE.surfaceAlt : PALETTE.gold,
+              padding: '8px 14px', borderRadius: 4,
+              background: introGenerating ? PALETTE.surfaceAlt : PALETTE.ink ?? '#1A1F2E',
               color: introGenerating ? PALETTE.textDim : PALETTE.bg,
-              border: 'none', cursor: introGenerating ? 'wait' : 'pointer',
+              border: `1px solid ${introGenerating ? PALETTE.border : (PALETTE.ink ?? '#1A1F2E')}`,
+              cursor: introGenerating ? 'wait' : 'pointer',
               fontFamily: 'DM Sans', fontSize: 12, fontWeight: 600,
               display: 'flex', alignItems: 'center', gap: 6,
               whiteSpace: 'nowrap',
-              transition: 'background 0.15s',
+              transition: 'opacity 0.12s, background 0.12s',
             }}
-            onMouseEnter={e => { if (!introGenerating) e.currentTarget.style.background = '#E5B856'; }}
-            onMouseLeave={e => { if (!introGenerating) e.currentTarget.style.background = PALETTE.gold; }}>
+            onMouseEnter={e => { if (!introGenerating) e.currentTarget.style.opacity = '0.92'; }}
+            onMouseLeave={e => { if (!introGenerating) e.currentTarget.style.opacity = '1'; }}>
             {introGenerating ? (
-              <><Sparkles size={13} /> <span>Üretiliyor…</span></>
+              <><Loader2 size={13} className="ily-spin" style={{ animation: 'ily-spin 0.8s linear infinite' }} /> <span>Üretiliyor</span></>
             ) : (
-              <><Sparkles size={13} /> <span>Üret</span></>
+              <><Sparkles size={13} /> <span>Taslak üret</span></>
             )}
           </button>
         </div>
 
         <div>
           <FieldLabel>Sayı Tanıtım Paragrafı (TR)</FieldLabel>
-          <TextField value={cover.introTr} onChange={v => setCover({ ...cover, introTr: v })} multiline rows={6} />
+          {introGenerating && !cover.introTr ? (
+            <IntroSkeleton lines={5} />
+          ) : (
+            <TextField value={cover.introTr} onChange={v => setCover({ ...cover, introTr: v })} multiline rows={6} />
+          )}
         </div>
         <div>
           <FieldLabel>Issue Introduction (EN)</FieldLabel>
-          <TextField value={cover.introEn} onChange={v => setCover({ ...cover, introEn: v })} multiline rows={6} />
+          {introGenerating && !cover.introEn ? (
+            <IntroSkeleton lines={5} />
+          ) : (
+            <TextField value={cover.introEn} onChange={v => setCover({ ...cover, introEn: v })} multiline rows={6} />
+          )}
         </div>
       </div>
     </div>
   </>
+);
+
+const IntroSkeleton = ({ lines = 5 }) => (
+  <div style={{
+    padding: 14,
+    background: PALETTE.surface,
+    border: `1px solid ${PALETTE.border}`,
+    borderRadius: 4,
+    display: 'flex', flexDirection: 'column', gap: 8,
+  }}>
+    {Array.from({ length: lines }).map((_, i) => (
+      <div key={i} className="ily-skel" style={{
+        height: 12,
+        width: i === lines - 1 ? '62%' : '100%',
+      }} />
+    ))}
+  </div>
 );
 
 // ============== Masthead Section ==============
@@ -1156,37 +1227,37 @@ const Sidebar = ({ activeSection, setActiveSection, journal, issue, totalArticle
 
   return (
     <aside style={{
-      width: 280, flexShrink: 0,
+      width: 288, flexShrink: 0,
       borderRight: `1px solid ${PALETTE.border}`,
-      padding: '24px 18px',
+      padding: '24px 20px',
       background: PALETTE.surface,
       overflowY: 'auto',
     }}>
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontFamily: 'JetBrains Mono', fontSize: 9, letterSpacing: 2, color: PALETTE.goldDim, textTransform: 'uppercase', marginBottom: 6 }}>
-          Aktif Sayı
+      <div style={{ marginBottom: 22 }}>
+        <div style={{ fontFamily: 'JetBrains Mono', fontSize: 9, letterSpacing: 2, color: PALETTE.goldDim, textTransform: 'uppercase', marginBottom: 8 }}>
+          Aktif sayı
         </div>
-        <div style={{ fontFamily: 'Fraunces, serif', fontSize: 28, fontWeight: 500, color: PALETTE.text, lineHeight: 1.05, letterSpacing: -0.8 }}>
-          Cilt {issue.volume}, <span style={{ fontStyle: 'italic', color: PALETTE.gold }}>No. {issue.number}</span>
+        <div style={{ fontFamily: 'Fraunces, serif', fontSize: 30, fontWeight: 500, color: PALETTE.ink, lineHeight: 1.02, letterSpacing: -1 }}>
+          Vol. {issue.volume}, <span style={{ fontStyle: 'italic', color: PALETTE.gold }}>No. {issue.number}</span>
         </div>
-        <div style={{ fontFamily: 'Fraunces, serif', fontSize: 13, color: PALETTE.textDim, marginTop: 4, fontStyle: 'italic' }}>
+        <div style={{ fontFamily: 'Fraunces, serif', fontSize: 13, color: PALETTE.textDim, marginTop: 6, fontStyle: 'italic' }}>
           {issue.season} {issue.year}
         </div>
       </div>
 
       <div style={{
-        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10,
-        marginBottom: 24, padding: '14px 0',
+        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0,
+        marginBottom: 24, padding: '12px 0',
         borderTop: `1px solid ${PALETTE.borderSoft}`,
         borderBottom: `1px solid ${PALETTE.borderSoft}`,
       }}>
-        <div>
-          <div style={{ fontFamily: 'Fraunces, serif', fontSize: 24, color: PALETTE.gold, fontWeight: 500, lineHeight: 1 }}>{totalArticles}</div>
-          <div style={{ fontSize: 9, letterSpacing: 1.4, color: PALETTE.textMuted, marginTop: 4, textTransform: 'uppercase' }}>Makale</div>
+        <div style={{ paddingRight: 12, borderRight: `1px solid ${PALETTE.borderSoft}` }}>
+          <div style={{ fontFamily: 'Fraunces, serif', fontSize: 26, color: PALETTE.ink, fontWeight: 500, lineHeight: 1, letterSpacing: -0.5 }}>{totalArticles}</div>
+          <div style={{ fontFamily: 'JetBrains Mono', fontSize: 9, letterSpacing: 1.6, color: PALETTE.textMuted, marginTop: 6, textTransform: 'uppercase' }}>Makale</div>
         </div>
-        <div>
-          <div style={{ fontFamily: 'Fraunces, serif', fontSize: 24, color: PALETTE.gold, fontWeight: 500, lineHeight: 1 }}>{totalPages}</div>
-          <div style={{ fontSize: 9, letterSpacing: 1.4, color: PALETTE.textMuted, marginTop: 4, textTransform: 'uppercase' }}>Sayfa</div>
+        <div style={{ paddingLeft: 16 }}>
+          <div style={{ fontFamily: 'Fraunces, serif', fontSize: 26, color: PALETTE.ink, fontWeight: 500, lineHeight: 1, letterSpacing: -0.5 }}>{totalPages}</div>
+          <div style={{ fontFamily: 'JetBrains Mono', fontSize: 9, letterSpacing: 1.6, color: PALETTE.textMuted, marginTop: 6, textTransform: 'uppercase' }}>Sayfa</div>
         </div>
       </div>
 
@@ -1230,40 +1301,44 @@ const Sidebar = ({ activeSection, setActiveSection, journal, issue, totalArticle
       </div>
 
       <div>
-        <div style={{ fontSize: 9, letterSpacing: 1.6, color: PALETTE.textMuted, textTransform: 'uppercase', marginBottom: 10, fontWeight: 500 }}>
+        <div style={{ fontFamily: 'JetBrains Mono', fontSize: 9, letterSpacing: 1.8, color: PALETTE.textMuted, textTransform: 'uppercase', marginBottom: 12, fontWeight: 600 }}>
           Çıktılar
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {[
-            { icon: FileText, label: 'Frontmatter DOCX', onClick: onGenerateDocx, active: true, busy: docxGenerating },
-            { icon: FileCode2, label: 'Crossref XML', onClick: onGenerateCrossref, active: true, busy: crossrefGenerating },
-            { icon: ImageIcon, label: 'Kapak Görseli', onClick: onGenerateCoverImage, active: true, busy: coverImageGenerating },
-            { icon: Send, label: 'LinkedIn Kartları', active: false },
-            { icon: Archive, label: 'Tam Paket (.zip)', active: false },
+            { icon: FileText, label: 'Frontmatter DOCX', sub: 'Word — baskıya hazır', onClick: onGenerateDocx, active: true, busy: docxGenerating },
+            { icon: FileCode2, label: 'Crossref deposit', sub: 'XML — schema 5.3.1', onClick: onGenerateCrossref, active: true, busy: crossrefGenerating },
+            { icon: ImageIcon, label: 'Kapak görseli', sub: 'PNG — 1200×1697', onClick: onGenerateCoverImage, active: true, busy: coverImageGenerating },
+            { icon: Send, label: 'LinkedIn kartları', sub: 'Yakında', active: false },
+            { icon: Archive, label: 'Tam paket (.zip)', sub: 'Yakında', active: false },
           ].map((o, i) => (
             <button key={i} disabled={!o.active || o.busy} onClick={o.onClick}
               style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '8px 10px',
-                background: o.active ? (o.busy ? PALETTE.surfaceAlt : PALETTE.goldGlow) : 'transparent',
-                border: `1px solid ${o.active ? PALETTE.goldDim : PALETTE.borderSoft}`,
-                borderRadius: 5, fontFamily: 'DM Sans', fontSize: 12,
-                color: o.active ? (o.busy ? PALETTE.textDim : PALETTE.gold) : PALETTE.textMuted,
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '9px 12px',
+                background: 'transparent',
+                border: `1px solid ${o.active ? PALETTE.border : PALETTE.borderSoft}`,
+                borderRadius: 4, fontFamily: 'DM Sans', fontSize: 12,
+                color: o.active ? (o.busy ? PALETTE.textDim : PALETTE.text) : PALETTE.textMuted,
                 cursor: o.active ? (o.busy ? 'wait' : 'pointer') : 'not-allowed',
                 width: '100%', textAlign: 'left',
-                fontWeight: o.active ? 500 : 400,
-                transition: 'all 0.15s',
+                fontWeight: 500,
+                transition: 'background 0.12s, border-color 0.12s',
               }}
-              onMouseEnter={e => { if (o.active && !o.busy) { e.currentTarget.style.background = 'rgba(212,168,74,0.2)'; } }}
-              onMouseLeave={e => { if (o.active && !o.busy) { e.currentTarget.style.background = PALETTE.goldGlow; } }}>
-              <o.icon size={13} strokeWidth={1.6} />
-              <span style={{ flex: 1 }}>{o.label}</span>
-              {o.active
-                ? (o.busy
-                    ? <span style={{ fontSize: 9, letterSpacing: 0.5, color: PALETTE.textDim }}>ÜRETİLİYOR…</span>
-                    : <span style={{ fontSize: 10, color: PALETTE.gold }}>↓</span>)
-                : <span style={{ fontSize: 9, letterSpacing: 0.5, color: PALETTE.textMuted }}>YAKINDA</span>
-              }
+              onMouseEnter={e => { if (o.active && !o.busy) { e.currentTarget.style.background = PALETTE.goldGlow; e.currentTarget.style.borderColor = PALETTE.goldDim; } }}
+              onMouseLeave={e => { if (o.active && !o.busy) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = PALETTE.border; } }}>
+              <o.icon size={14} strokeWidth={1.5} color={o.active ? (o.busy ? PALETTE.textDim : PALETTE.gold) : PALETTE.textMuted} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, color: o.active ? PALETTE.text : PALETTE.textMuted }}>{o.label}</div>
+                <div style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 11, color: PALETTE.textMuted, marginTop: 1 }}>
+                  {o.busy ? 'Üretiliyor' : o.sub}
+                </div>
+              </div>
+              {o.active && (
+                o.busy
+                  ? <Loader2 size={12} color={PALETTE.gold} style={{ animation: 'ily-spin 0.8s linear infinite' }} />
+                  : <Download size={12} color={PALETTE.textMuted} />
+              )}
             </button>
           ))}
         </div>
@@ -1854,10 +1929,7 @@ ${reviewersHtml}
 
   return (
     <div style={{ minHeight: '100vh', background: PALETTE.bg, color: PALETTE.text, fontFamily: 'DM Sans, sans-serif' }}>
-      <style>{`
-        [cmdk-item][data-selected="true"] { background: ${PALETTE.goldGlow}; color: ${PALETTE.gold}; }
-        [cmdk-item] { transition: background .08s; }
-      `}</style>
+      <style>{GLOBAL_CSS}</style>
       <Toaster
         position="bottom-right"
         toastOptions={{
@@ -1878,44 +1950,59 @@ ${reviewersHtml}
         onGenerateIntro={generateIntroParagraphs}
       />
       <header style={{
-        borderBottom: `1px solid ${PALETTE.border}`, padding: '16px 24px',
+        borderBottom: `1px solid ${PALETTE.border}`, padding: '14px 24px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         background: PALETTE.surface,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-            <span style={{ fontFamily: 'Fraunces, serif', fontWeight: 600, fontSize: 24, fontStyle: 'italic', color: PALETTE.gold, letterSpacing: -0.5 }}>Issuely</span>
-            <span style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: PALETTE.textMuted, letterSpacing: 1.5, textTransform: 'uppercase' }}>Issue Workspace</span>
-          </div>
-          <div style={{ paddingLeft: 24, borderLeft: `1px solid ${PALETTE.border}`, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <BookOpen size={15} strokeWidth={1.6} color={PALETTE.textDim} />
-            <div>
-              <div style={{ fontFamily: 'Fraunces, serif', fontSize: 14, color: PALETTE.text, fontWeight: 500 }}>{journal.name}</div>
-              <div style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: PALETTE.textMuted }}>
-                eISSN {journal.eissn} · DOI {journal.doiPrefix}
-              </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <a href="#/" onClick={(e) => { e.preventDefault(); window.location.hash = '#/'; }}
+             style={{ textDecoration: 'none', display: 'flex', alignItems: 'baseline', gap: 10 }}>
+            <span style={{ fontFamily: 'Fraunces, serif', fontWeight: 600, fontSize: 24, color: PALETTE.ink, letterSpacing: -0.6 }}>Issuely</span>
+            <span style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 13, color: PALETTE.textDim, fontWeight: 400 }}>issue workshop</span>
+          </a>
+          <div style={{ paddingLeft: 20, borderLeft: `1px solid ${PALETTE.border}`, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <span style={{ fontFamily: 'Fraunces, serif', fontSize: 14, color: PALETTE.text, fontWeight: 500 }}>{journal.name}</span>
+              <span style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 12, color: PALETTE.textDim }}>
+                Vol. {issue.volume} · No. {issue.number}
+              </span>
+            </div>
+            <div style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: PALETTE.textMuted, letterSpacing: 0.6 }}>
+              eISSN {journal.eissn} · DOI {journal.doiPrefix}
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <StatusPill label="Taslak" color={PALETTE.gold} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '4px 10px', borderRadius: 999,
+            background: PALETTE.goldGlow, border: `1px solid ${PALETTE.goldDim}`,
+            fontFamily: 'JetBrains Mono', fontSize: 10, color: PALETTE.goldDim,
+            letterSpacing: 0.5, textTransform: 'uppercase',
+          }}>
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: PALETTE.gold }} />
+            Taslak
+          </span>
           <button
             onClick={() => setPaletteOpen(true)}
             title="Komut paleti (⌘K)"
             style={{
               background: 'transparent', border: `1px solid ${PALETTE.border}`,
-              color: PALETTE.textDim, padding: '7px 10px', borderRadius: 5,
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-              fontSize: 12, fontFamily: 'DM Sans',
-            }}>
-            <Search size={13} strokeWidth={1.6} /> Komut Paleti
-            <kbd style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: PALETTE.textMuted, padding: '1px 5px', background: PALETTE.surfaceAlt, borderRadius: 3, marginLeft: 4 }}>⌘K</kbd>
+              color: PALETTE.textDim, padding: '7px 12px', borderRadius: 4,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+              fontSize: 12, fontFamily: 'DM Sans', fontWeight: 500,
+              transition: 'border-color 0.12s, color 0.12s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = PALETTE.ink; e.currentTarget.style.color = PALETTE.ink; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = PALETTE.border; e.currentTarget.style.color = PALETTE.textDim; }}>
+            <Search size={13} strokeWidth={1.6} /> Komut paleti
+            <kbd style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: PALETTE.textMuted, padding: '1px 5px', background: PALETTE.surfaceAlt, borderRadius: 3, marginLeft: 2 }}>⌘K</kbd>
           </button>
           <button style={{
             background: 'transparent', border: `1px solid ${PALETTE.border}`,
-            color: PALETTE.textDim, padding: '7px 10px', borderRadius: 5,
+            color: PALETTE.textDim, padding: '7px 12px', borderRadius: 4,
             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-            fontSize: 12, fontFamily: 'DM Sans',
+            fontSize: 12, fontFamily: 'DM Sans', fontWeight: 500,
           }}>
             <Settings size={13} strokeWidth={1.6} /> Dergi Ayarları
           </button>
