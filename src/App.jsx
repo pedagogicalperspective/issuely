@@ -30,7 +30,11 @@ import {
   CircleNotch as Loader2,
   X,
   Check,
-  Download
+  Download,
+  ShieldCheck,
+  WarningCircle,
+  Warning as WarningTriangle,
+  Info
 } from '@phosphor-icons/react';
 import { Toaster, toast } from 'sonner';
 import {
@@ -428,6 +432,189 @@ ${articlesXml}
 
 // ============== Sections nav config ==============
 
+// ============== Pre-flight Quality Checker ==============
+//
+// Deterministic scanner that audits the entire issue state and surfaces
+// metadata gaps before publication. Returns a flat list of issues so the
+// UI can group, sort, and "jump-to" the offending section.
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
+const EISSN_RE = /^\d{4}-\d{3}[\dX]$/i;
+
+const runQualityChecks = ({ journal, issue, paginated, cover, masthead, board, reviewers, indexing }) => {
+  const out = [];
+  const push = (severity, category, title, detail, jumpTo) =>
+    out.push({ id: `${category}-${out.length}`, severity, category, title, detail, jumpTo });
+
+  // ---- Journal ----
+  if (!EISSN_RE.test(String(journal.eissn || '').trim())) {
+    push('error', 'Dergi', 'eISSN format hatalı', `Beklenen format: NNNN-NNNX. Mevcut: "${journal.eissn || '(boş)'}"`, null);
+  }
+  if (!journal.doiPrefix || !/^10\.\d{4,}$/.test(String(journal.doiPrefix).trim())) {
+    push('error', 'Dergi', 'DOI prefix eksik veya hatalı', 'Crossref DOI prefix formatı: 10.NNNNN', null);
+  }
+
+  // ---- Issue meta ----
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(issue.publishDate || '').trim())) {
+    push('error', 'Sayı', 'Yayın tarihi format hatalı', 'Crossref XML için YYYY-MM-DD formatı gerekli', 'cover');
+  }
+  if (!issue.season || !String(issue.season).trim()) {
+    push('warning', 'Sayı', 'Sezon belirtilmemiş', 'Bahar / Yaz / Güz / Kış — kapakta ve frontmatter\'da kullanılır', 'cover');
+  }
+  if (!cover.thematicFocus || cover.thematicFocus.length < 4) {
+    push('warning', 'Sayı', 'Tematik odak boş', 'Kapakta öne çıkacak vurgu cümlesi (örn. "AI Literacy in Teacher Education")', 'cover');
+  }
+  if (!cover.introTr || cover.introTr.length < 80) {
+    push('warning', 'Sayı', 'Tanıtım paragrafı (TR) çok kısa', 'En az 80 karakter önerilir. AI butonunu kullanabilirsin.', 'cover');
+  }
+  if (!cover.introEn || cover.introEn.length < 80) {
+    push('warning', 'Sayı', 'Tanıtım paragrafı (EN) çok kısa', 'En az 80 karakter önerilir. AI butonunu kullanabilirsin.', 'cover');
+  }
+
+  // ---- Masthead ----
+  if (!masthead.publisherTr || !masthead.publisherEn) {
+    push('error', 'Jenerik', 'Yayıncı bilgisi eksik', 'Publisher TR ve EN ikisi de Crossref deposit\'inde gerekli', 'masthead');
+  }
+  if (!EMAIL_RE.test(String(masthead.contactEmail || '').trim())) {
+    push('error', 'Jenerik', 'İletişim e-postası geçersiz', `Mevcut: "${masthead.contactEmail || '(boş)'}"`, 'masthead');
+  }
+  if (!URL_RE.test(String(masthead.website || '').trim())) {
+    push('warning', 'Jenerik', 'Web sitesi URL geçersiz', 'Crossref resource URL\'leri buradan üretiliyor', 'masthead');
+  }
+  if (!masthead.address || masthead.address.length < 20) {
+    push('info', 'Jenerik', 'Yayıncı adresi kısa veya boş', 'DOAJ ve diğer indeksler tam adresi ister', 'masthead');
+  }
+
+  // ---- Editorial Board ----
+  const eic = board.editorInChief || {};
+  if (!eic.first || !eic.last || eic.last === 'Soyad') {
+    push('error', 'Kurul', 'Baş Editör tanımlı değil', 'Baş Editör adı + soyadı + kurum doldurulmalı', 'board');
+  }
+  if (!eic.orcid || !/^\d{4}-\d{4}-\d{4}-[\dX]{4}$/i.test(eic.orcid)) {
+    push('warning', 'Kurul', 'Baş Editör ORCID eksik veya hatalı', 'ORCID formatı: 0000-0000-0000-0000', 'board');
+  }
+
+  const allBoard = [
+    ...(board.associateEditors || []),
+    ...(board.sectionEditors || []),
+    ...(board.editorialBoard || []),
+    ...(board.internationalBoard || []),
+  ];
+  const placeholderBoardCount = allBoard.filter(p =>
+    p.first === 'Author' || p.last === 'Name' || !p.first || !p.last
+  ).length;
+  if (placeholderBoardCount > 0) {
+    push('warning', 'Kurul', `${placeholderBoardCount} kurul üyesi placeholder`, '"Author Name" şablon değerleri gerçek isimlerle değiştirilmeli', 'board');
+  }
+  if ((board.internationalBoard || []).length < 2) {
+    push('info', 'Kurul', 'Uluslararası danışma kurulu zayıf', 'En az 2 uluslararası üye indeks başvuruları için önerilir', 'board');
+  }
+  const boardMissingOrcid = allBoard.filter(p => !p.orcid || !/^\d{4}-\d{4}-\d{4}-[\dX]{4}$/i.test(p.orcid)).length;
+  if (boardMissingOrcid > 0) {
+    push('info', 'Kurul', `${boardMissingOrcid} kurul üyesi ORCID'siz`, 'ORCID, indeks kalite metriklerini güçlendirir', 'board');
+  }
+
+  // ---- Articles (per-article + cross-checks) ----
+  if (!paginated.length) {
+    push('error', 'Makaleler', 'Sayıda makale yok', 'En az 1 makale gerekli', 'articles');
+  }
+
+  const doiSet = new Map();
+  const allAuthorOrcids = new Map();
+  paginated.forEach((a, i) => {
+    const label = `Makale ${i + 1}`;
+    const titleSnippet = (a.titleTr || a.titleEn || '').slice(0, 60);
+
+    if (!a.titleTr || a.titleTr.length < 6) {
+      push('error', 'Makaleler', `${label} — başlık TR eksik`, titleSnippet || '(başlık boş)', 'articles');
+    }
+    if (!a.titleEn || a.titleEn.length < 6) {
+      push('warning', 'Makaleler', `${label} — başlık EN eksik`, 'İki dilli dergilerde EN başlık zorunlu', 'articles');
+    }
+    if (a.titleTr && a.titleTr.split(/\s+/).length > 20) {
+      push('info', 'Makaleler', `${label} — başlık çok uzun (TR)`, `${a.titleTr.split(/\s+/).length} kelime, 12-15 önerilir`, 'articles');
+    }
+
+    if (!a.authors || a.authors.length === 0) {
+      push('error', 'Makaleler', `${label} — yazar yok`, titleSnippet, 'articles');
+    } else {
+      a.authors.forEach((au, ai) => {
+        if (!au.first || !au.last) {
+          push('error', 'Makaleler', `${label} — yazar ${ai + 1} adı eksik`, 'Ad ve soyad ikisi de gerekli', 'articles');
+        }
+        const orcid = (au.orcid || '').trim();
+        if (!orcid) {
+          push('warning', 'Makaleler', `${label} — ${au.first || ''} ${au.last || ''} ORCID'i yok`, 'Crossref deposit\'inde atlanır, indeks zayıflar', 'articles');
+        } else if (!/^\d{4}-\d{4}-\d{4}-[\dX]{4}$/i.test(orcid)) {
+          push('error', 'Makaleler', `${label} — ${au.first || ''} ${au.last || ''} ORCID formatı hatalı`, `Mevcut: "${orcid}". Format: 0000-0000-0000-0000`, 'articles');
+        } else {
+          // Track for duplicate detection
+          if (!allAuthorOrcids.has(orcid)) allAuthorOrcids.set(orcid, []);
+          allAuthorOrcids.get(orcid).push(`${label} (${au.first} ${au.last})`);
+        }
+      });
+    }
+
+    if (!a.keywords || a.keywords.length === 0) {
+      push('warning', 'Makaleler', `${label} — anahtar kelime yok`, '3-5 anahtar kelime önerilir', 'articles');
+    } else if (a.keywords.length < 3) {
+      push('info', 'Makaleler', `${label} — sadece ${a.keywords.length} anahtar kelime`, '3-5 önerilir', 'articles');
+    }
+
+    if (!a.pages || a.pages < 1) {
+      push('error', 'Makaleler', `${label} — sayfa sayısı yok`, 'Sayfa aralığı hesaplanamaz', 'articles');
+    } else if (a.pages > 60) {
+      push('info', 'Makaleler', `${label} — uzun makale (${a.pages} sayfa)`, 'Olağan dışı uzunluk, kontrol et', 'articles');
+    }
+
+    if (!a.type || !['research', 'review', 'case', 'editorial'].includes(a.type)) {
+      push('warning', 'Makaleler', `${label} — tip belirtilmemiş`, 'Araştırma / Derleme / Olgu / Editöryel', 'articles');
+    }
+
+    // DOI duplicate check
+    const doi = computeDOI(journal, issue, i + 1);
+    if (doiSet.has(doi)) {
+      push('error', 'Çapraz Kontrol', `DOI çakışması: ${doi}`, `${doiSet.get(doi)} ve ${label} aynı DOI üretiyor`, 'articles');
+    } else {
+      doiSet.set(doi, label);
+    }
+  });
+
+  // Cross-article: duplicate ORCID across articles (same author appearing twice — flag for review)
+  allAuthorOrcids.forEach((occurrences, orcid) => {
+    if (occurrences.length > 1) {
+      const uniqueNames = new Set(occurrences.map(s => s.split(' (')[1]?.replace(')', '')));
+      if (uniqueNames.size > 1) {
+        push('warning', 'Çapraz Kontrol', `ORCID ${orcid} birden çok kişide`, occurrences.join(' · '), 'articles');
+      }
+    }
+  });
+
+  // ---- Reviewers ----
+  if (reviewers.length < 5) {
+    push('warning', 'Hakemler', `Sadece ${reviewers.length} hakem listelendi`, 'En az 5-10 hakem teşekkür sayfası için önerilir', 'reviewers');
+  }
+  const reviewerPlaceholder = reviewers.filter(r => r.last === 'Soyad' || !r.first || !r.last).length;
+  if (reviewerPlaceholder > 0) {
+    push('warning', 'Hakemler', `${reviewerPlaceholder} hakem placeholder`, 'Şablon satırları gerçek isimlerle güncellenmeli', 'reviewers');
+  }
+
+  // ---- Indexing ----
+  const indexedCount = (indexing || []).filter(i => i.status === 'indexed').length;
+  if (indexedCount === 0) {
+    push('info', 'İndeks', 'Hiçbir indeks tanımlı değil', 'En az birkaç indeks (Google Scholar, ASOS, vb.) eklenmeli', 'indexing');
+  }
+
+  return out;
+};
+
+const SEVERITY_META = {
+  error:   { label: 'Hata',   color: '#DC2626', icon: WarningCircle,    rank: 0 },
+  warning: { label: 'Uyarı',  color: '#D97706', icon: WarningTriangle,  rank: 1 },
+  info:    { label: 'Bilgi',  color: '#0EA5E9', icon: Info,             rank: 2 },
+};
+
 const SECTIONS = [
   { id: 'cover', label: 'Kapak', icon: ImageIcon, romanIdx: 'i' },
   { id: 'masthead', label: 'Jenerik', icon: ScrollText, romanIdx: 'ii' },
@@ -436,6 +623,7 @@ const SECTIONS = [
   { id: 'toc', label: 'İçindekiler', icon: Layout, romanIdx: 'v' },
   { id: 'articles', label: 'Makaleler', icon: FileText, romanIdx: '1' },
   { id: 'reviewers', label: 'Sayı Hakemleri', icon: UserCheck, romanIdx: 'vi' },
+  { id: 'precheck', label: 'Kalite Kontrolü', icon: ShieldCheck, romanIdx: 'vii' },
 ];
 
 // ============== UI primitives ==============
@@ -1274,15 +1462,239 @@ const ArticlesSection = ({ paginated, journal, issue, setArticles, addArticle })
   );
 };
 
+// ============== Precheck (Quality) Section ==============
+
+const SeverityBadge = ({ severity }) => {
+  const meta = SEVERITY_META[severity];
+  const Icon = meta.icon;
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      padding: '2px 8px', fontSize: 10,
+      fontFamily: 'JetBrains Mono, monospace', fontWeight: 500,
+      letterSpacing: 0.6, textTransform: 'uppercase',
+      color: meta.color,
+      background: meta.color + '12',
+      border: `1px solid ${meta.color}33`,
+      borderRadius: 999,
+    }}>
+      <Icon size={10} weight="fill" /> {meta.label}
+    </span>
+  );
+};
+
+const SummaryStat = ({ severity, count }) => {
+  const meta = SEVERITY_META[severity];
+  const Icon = meta.icon;
+  return (
+    <div style={{
+      flex: 1, padding: '14px 16px',
+      background: PALETTE.surface,
+      border: `1px solid ${count > 0 ? meta.color + '40' : PALETTE.borderSoft}`,
+      borderRadius: 8,
+      display: 'flex', alignItems: 'center', gap: 12,
+    }}>
+      <div style={{
+        width: 32, height: 32, borderRadius: 8,
+        background: count > 0 ? meta.color + '14' : PALETTE.surfaceAlt,
+        color: count > 0 ? meta.color : PALETTE.textMuted,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <Icon size={16} weight="fill" />
+      </div>
+      <div>
+        <div style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 500, color: count > 0 ? PALETTE.text : PALETTE.textDim, lineHeight: 1 }}>
+          {count}
+        </div>
+        <div style={{ fontSize: 10, letterSpacing: 1.2, color: PALETTE.textMuted, textTransform: 'uppercase', marginTop: 4, fontFamily: 'DM Sans' }}>
+          {meta.label}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const PrecheckSection = ({ checks, onJump }) => {
+  const errorCount = checks.filter(c => c.severity === 'error').length;
+  const warningCount = checks.filter(c => c.severity === 'warning').length;
+  const infoCount = checks.filter(c => c.severity === 'info').length;
+  const total = checks.length;
+
+  // Group by category, ordered so the highest-severity buckets surface first.
+  const groups = useMemo(() => {
+    const m = new Map();
+    checks.forEach(c => {
+      if (!m.has(c.category)) m.set(c.category, []);
+      m.get(c.category).push(c);
+    });
+    return Array.from(m.entries())
+      .map(([category, items]) => ({
+        category,
+        items: items.sort((a, b) => SEVERITY_META[a.severity].rank - SEVERITY_META[b.severity].rank),
+        worstRank: Math.min(...items.map(i => SEVERITY_META[i.severity].rank)),
+      }))
+      .sort((a, b) => a.worstRank - b.worstRank);
+  }, [checks]);
+
+  const ready = errorCount === 0 && warningCount === 0;
+
+  return (
+    <>
+      <SectionHeader
+        romanIdx="vii"
+        title="Kalite Kontrolü"
+        subtitle="Yayın öncesi metadata bütünlüğü taraması. Hatalar düzeltilmeden Crossref deposit kabul etmez; uyarılar indeks kalite skorunu etkiler."
+        count={total}
+      />
+
+      {/* Hero banner — ready vs needs-work */}
+      <div style={{
+        marginBottom: 24, padding: '18px 22px',
+        background: ready ? `${PALETTE.success || '#16A34A'}10` : (errorCount > 0 ? '#DC262610' : '#D9770610'),
+        border: `1px solid ${ready ? (PALETTE.success || '#16A34A') + '40' : (errorCount > 0 ? '#DC262640' : '#D9770640')}`,
+        borderRadius: 10,
+        display: 'flex', alignItems: 'center', gap: 16,
+      }}>
+        <div style={{
+          width: 44, height: 44, borderRadius: 10,
+          background: ready ? (PALETTE.success || '#16A34A') + '20' : (errorCount > 0 ? '#DC262620' : '#D9770620'),
+          color: ready ? (PALETTE.success || '#16A34A') : (errorCount > 0 ? '#DC2626' : '#D97706'),
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {ready ? <ShieldCheck size={22} weight="fill" /> : (errorCount > 0 ? <WarningCircle size={22} weight="fill" /> : <WarningTriangle size={22} weight="fill" />)}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontFamily: 'Fraunces, serif', fontSize: 18, fontWeight: 500, color: PALETTE.text, lineHeight: 1.2 }}>
+            {ready
+              ? 'Sayı yayına hazır görünüyor.'
+              : errorCount > 0
+                ? `${errorCount} kritik hata, ${warningCount} uyarı var.`
+                : `${warningCount} uyarı, ${infoCount} bilgi notu var.`}
+          </div>
+          <div style={{ fontSize: 13, color: PALETTE.textDim, marginTop: 4, fontFamily: 'DM Sans' }}>
+            {ready
+              ? `${infoCount > 0 ? `${infoCount} bilgilendirme notu kaldı, opsiyonel.` : 'Tüm zorunlu alanlar dolu.'}`
+              : errorCount > 0
+                ? 'Hatalar Crossref XML deposit\'inde sorun yaratacak veya frontmatter\'da boş alan bırakacak.'
+                : 'İndeks başvurularını ve kalite metriklerini iyileştirir.'}
+          </div>
+        </div>
+      </div>
+
+      {/* Severity totals */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 28 }}>
+        <SummaryStat severity="error" count={errorCount} />
+        <SummaryStat severity="warning" count={warningCount} />
+        <SummaryStat severity="info" count={infoCount} />
+      </div>
+
+      {/* Category groups */}
+      {groups.length === 0 ? (
+        <div style={{
+          padding: '32px 20px', textAlign: 'center',
+          background: PALETTE.surface, border: `1px dashed ${PALETTE.borderSoft}`,
+          borderRadius: 10, color: PALETTE.textDim, fontFamily: 'DM Sans', fontSize: 14,
+        }}>
+          Hiç eksik bulunamadı. Yayına hazırsın.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {groups.map(group => (
+            <div key={group.category}>
+              <h3 style={{
+                fontFamily: 'Fraunces, serif', fontSize: 17, fontWeight: 500,
+                color: PALETTE.gold, margin: '0 0 10px', fontStyle: 'italic',
+                display: 'flex', alignItems: 'baseline', gap: 10,
+              }}>
+                {group.category}
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: PALETTE.textMuted, fontStyle: 'normal' }}>
+                  {group.items.length}
+                </span>
+              </h3>
+              <div style={{
+                background: PALETTE.surface, border: `1px solid ${PALETTE.border}`,
+                borderRadius: 8, overflow: 'hidden',
+              }}>
+                {group.items.map((item, i) => {
+                  const meta = SEVERITY_META[item.severity];
+                  const Icon = meta.icon;
+                  return (
+                    <div key={item.id} style={{
+                      display: 'flex', alignItems: 'flex-start', gap: 14,
+                      padding: '14px 16px',
+                      borderBottom: i < group.items.length - 1 ? `1px solid ${PALETTE.borderSoft}` : 'none',
+                    }}>
+                      <div style={{
+                        marginTop: 2,
+                        color: meta.color,
+                        flexShrink: 0,
+                      }}>
+                        <Icon size={18} weight="fill" />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
+                          <SeverityBadge severity={item.severity} />
+                          <span style={{ fontFamily: 'DM Sans', fontSize: 13, fontWeight: 500, color: PALETTE.text }}>
+                            {item.title}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 12, color: PALETTE.textDim, fontFamily: 'DM Sans', lineHeight: 1.5 }}>
+                          {item.detail}
+                        </div>
+                      </div>
+                      {item.jumpTo && onJump && (
+                        <button onClick={() => onJump(item.jumpTo)}
+                          style={{
+                            flexShrink: 0, padding: '6px 10px',
+                            background: 'transparent', border: `1px solid ${PALETTE.border}`,
+                            color: PALETTE.textDim, fontFamily: 'DM Sans', fontSize: 11,
+                            borderRadius: 5, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: 4,
+                            transition: 'all 0.12s',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = PALETTE.gold; e.currentTarget.style.color = PALETTE.gold; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = PALETTE.border; e.currentTarget.style.color = PALETTE.textDim; }}
+                        >
+                          Düzelt
+                          <ChevronRight size={11} weight="bold" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{
+        marginTop: 24, padding: '12px 16px',
+        background: PALETTE.surface, border: `1px dashed ${PALETTE.borderSoft}`,
+        borderRadius: 8, fontSize: 11, color: PALETTE.textMuted, fontFamily: 'DM Sans',
+        display: 'flex', alignItems: 'center', gap: 10,
+      }}>
+        <Info size={13} weight="regular" />
+        <span>Bu tarama deterministik — her veri girişinde anında yeniden hesaplanır. AI destekli içerik kalitesi denetimleri (başlık akıcılığı, abstract çevirisi tutarlılığı) sonraki sürümde.</span>
+      </div>
+    </>
+  );
+};
+
 // ============== Sidebar ==============
 
-const Sidebar = ({ activeSection, setActiveSection, journal, issue, totalArticles, totalPages, totalBoard, totalReviewers, totalIndexing, onGenerateDocx, docxGenerating, onGenerateCrossref, crossrefGenerating, onGenerateCoverImage, coverImageGenerating }) => {
+const Sidebar = ({ activeSection, setActiveSection, journal, issue, totalArticles, totalPages, totalBoard, totalReviewers, totalIndexing, onGenerateDocx, docxGenerating, onGenerateCrossref, crossrefGenerating, onGenerateCoverImage, coverImageGenerating, precheckErrors = 0, precheckWarnings = 0 }) => {
+  const precheckTotal = precheckErrors + precheckWarnings;
   const counts = {
     cover: null, masthead: null,
     board: totalBoard, indexing: totalIndexing,
     toc: totalArticles, articles: totalArticles,
     reviewers: totalReviewers,
+    precheck: precheckTotal > 0 ? precheckTotal : null,
   };
+  // Severity color for the precheck count chip — red when there are errors,
+  // amber for warnings only, muted gold for "all clear".
+  const precheckChipColor = precheckErrors > 0 ? '#DC2626' : (precheckWarnings > 0 ? '#D97706' : null);
 
   return (
     <aside style={{
@@ -1351,7 +1763,17 @@ const Sidebar = ({ activeSection, setActiveSection, journal, issue, totalArticle
                 <Icon size={14} weight="regular" />
                 <span style={{ flex: 1, fontWeight: active ? 600 : 400 }}>{s.label}</span>
                 {cnt !== null && cnt !== undefined && (
-                  <span style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: PALETTE.textMuted }}>{cnt}</span>
+                  s.id === 'precheck' && precheckChipColor ? (
+                    <span style={{
+                      fontFamily: 'JetBrains Mono', fontSize: 10, fontWeight: 600,
+                      padding: '2px 7px', borderRadius: 999,
+                      color: precheckChipColor,
+                      background: precheckChipColor + '14',
+                      border: `1px solid ${precheckChipColor}33`,
+                    }}>{cnt}</span>
+                  ) : (
+                    <span style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: PALETTE.textMuted }}>{cnt}</span>
+                  )
                 )}
               </button>
             );
@@ -1540,6 +1962,14 @@ export default function App() {
   const paginated = useMemo(() => computePageRanges(articles, issue.pageStart), [articles, issue.pageStart]);
   const totalPages = paginated.length ? paginated[paginated.length - 1].pageEnd - issue.pageStart + 1 : 0;
   const totalBoard = 1 + board.associateEditors.length + board.sectionEditors.length + board.editorialBoard.length + board.internationalBoard.length;
+
+  // Pre-flight quality scan — recomputed whenever any audited piece of state shifts.
+  const precheckResults = useMemo(
+    () => runQualityChecks({ journal, issue, paginated, cover, masthead, board, reviewers, indexing }),
+    [journal, issue, paginated, cover, masthead, board, reviewers, indexing],
+  );
+  const precheckErrors = precheckResults.filter(c => c.severity === 'error').length;
+  const precheckWarnings = precheckResults.filter(c => c.severity === 'warning').length;
 
   const addArticle = () => {
     const newArt = {
@@ -2089,6 +2519,8 @@ ${reviewersHtml}
           crossrefGenerating={crossrefGenerating}
           onGenerateCoverImage={generateCoverImage}
           coverImageGenerating={coverImageGenerating}
+          precheckErrors={precheckErrors}
+          precheckWarnings={precheckWarnings}
         />
 
         <main style={{ flex: 1, padding: '28px 32px', minWidth: 0, overflowY: 'auto' }}>
@@ -2112,6 +2544,7 @@ ${reviewersHtml}
                 />
               )}
               {activeSection === 'reviewers' && <ReviewersSection reviewers={reviewers} setReviewers={setReviewers} />}
+              {activeSection === 'precheck' && <PrecheckSection checks={precheckResults} onJump={setActiveSection} />}
             </motion.div>
           </AnimatePresence>
         </main>
